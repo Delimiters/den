@@ -16,7 +16,10 @@
       "mcp__playwright__browser_tabs",
       "mcp__playwright__browser_wait_for",
       "Bash(npm run test:once *)",
-      "Bash(pgrep *)"
+      "Bash(pgrep *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }
