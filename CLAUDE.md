@@ -1,14 +1,14 @@
 # Den — CLAUDE.md
 
-Den is a privacy-focused Discord alternative for gaming friend groups. Discord clone layout and features. Desktop app first (Windows), built for eventual mobile.
+Den is a privacy-focused chat app for gaming friend groups. Familiar chat layout and features. Desktop app first (Windows), built for eventual mobile.
 
 ## Why this exists
 
-Discord's push toward biometric data collection (face scans) and its closed-source nature prompted this. The goal is community ownership: users run their own servers, the code is auditable, and there's no vendor lock-in.
+Concerns about privacy, biometric data collection, and closed-source platforms prompted this. The goal is community ownership: users run their own servers, the code is auditable, and there's no vendor lock-in.
 
 Core values:
 - **Privacy by default** — open source so users can audit; client-server voice relay so IPs stay private between participants
-- **Shameless clone first** — get the Discord experience right before diverging; don't invent new UX while the foundation is unfinished
+- **Familiar first** — nail the core chat experience before diverging; don't invent new UX while the foundation is unfinished
 - **Free to start, designed to scale** — entire stack runs on free tiers for a small friend group; each service has a clear paid upgrade path
 - **No lock-in** — Supabase is self-hostable; LiveKit Cloud can be swapped for a self-hosted SFU with zero code changes
 

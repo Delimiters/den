@@ -24,14 +24,14 @@ export function MessageInput({ channelName, onSend }: MessageInputProps) {
 
   return (
     <div className="px-4 pb-6 pt-2 shrink-0">
-      <div className="bg-input-bg rounded-lg flex items-end gap-2 px-4 py-2">
+      <div className="bg-input-bg rounded-lg flex items-end gap-2 px-4 py-2.5">
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={`Message #${channelName}`}
           rows={1}
-          className="flex-1 bg-transparent text-text-primary text-sm outline-none resize-none leading-relaxed max-h-48 placeholder:text-text-muted"
+          className="flex-1 bg-transparent text-text-primary text-base outline-none resize-none leading-relaxed max-h-48 placeholder:text-text-muted"
           style={{ lineHeight: "1.5rem" }}
           onInput={(e) => {
             const el = e.currentTarget;

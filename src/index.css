@@ -11,11 +11,11 @@
 
   /* Text */
   --color-text-primary: #f2f3f5;
-  --color-text-secondary: #b5bac1;
+  --color-text-secondary: #dbdee1;
   --color-text-muted: #80848e;
   --color-text-link: #00a8fc;
 
-  /* Accent (Discord blurple) */
+  /* Accent (blurple) */
   --color-accent: #5865f2;
   --color-accent-hover: #4752c4;
 

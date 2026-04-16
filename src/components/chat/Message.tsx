@@ -90,7 +90,7 @@ export function Message({
         value={editContent}
         onChange={(e) => setEditContent(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="bg-input-bg text-text-primary rounded px-3 py-2 text-sm resize-none outline-none focus:ring-2 focus:ring-accent w-full"
+        className="bg-input-bg text-text-primary rounded px-3 py-2 text-base resize-none outline-none focus:ring-2 focus:ring-accent w-full"
         rows={1}
         style={{ minHeight: "2.25rem" }}
       />
@@ -98,7 +98,7 @@ export function Message({
     </div>
   ) : (
     <>
-      <p className="text-text-secondary text-sm leading-relaxed break-words">
+      <p className="text-text-secondary text-base leading-relaxed break-words">
         {message.content}
         {message.edited_at && (
           <span className="text-text-muted text-xs ml-1">(edited)</span>
@@ -176,7 +176,7 @@ export function Message({
     return (
       <div className="group relative flex items-start gap-4 px-4 py-0.5 hover:bg-msg-hover">
         {actions}
-        <span className="text-text-muted text-xs w-10 mt-0.5 text-right shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <span className="text-text-muted text-xs w-14 mt-0.5 text-right shrink-0 opacity-0 group-hover:opacity-100 transition-opacity leading-relaxed">
           {formatTimestamp(message.created_at, true)}
         </span>
         <div className="min-w-0 flex-1">{contentBlock}</div>
@@ -185,7 +185,7 @@ export function Message({
   }
 
   return (
-    <div className="group relative flex items-start gap-4 px-4 py-1 hover:bg-msg-hover">
+    <div className="group relative flex items-start gap-4 px-4 py-2 hover:bg-msg-hover mt-1">
       {actions}
       <Avatar
         src={author?.avatar_url}
@@ -194,7 +194,7 @@ export function Message({
         className="mt-0.5 cursor-pointer shrink-0"
       />
       <div className="flex flex-col min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-2 mb-0.5">
           <span className="text-text-primary text-sm font-semibold cursor-pointer hover:underline">
             {displayName}
           </span>

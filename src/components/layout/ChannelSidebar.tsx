@@ -199,7 +199,7 @@ function ChannelRow({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-sm transition-colors group ${
+      className={`w-full flex items-center gap-1.5 px-2 py-2 rounded text-sm transition-colors group ${
         active
           ? "bg-msg-hover text-text-primary"
           : "text-text-muted hover:bg-msg-hover hover:text-text-secondary"
