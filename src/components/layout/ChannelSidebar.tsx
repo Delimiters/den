@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import type { Channel, Guild, User } from "../../types";
 import { Avatar } from "../ui/Avatar";
@@ -129,7 +129,8 @@ export function ChannelSidebar({
       {/* Invite modal */}
       {showInvite && guild && (
         <InviteModal
-          inviteCode={guild.invite_code}
+          guildId={guild.id}
+          currentUserId={currentUser.id}
           onClose={() => setShowInvite(false)}
         />
       )}
@@ -211,36 +212,171 @@ function ChannelRow({
   );
 }
 
-function InviteModal({ inviteCode, onClose }: { inviteCode: string; onClose: () => void }) {
+const EXPIRY_OPTIONS = [
+  { label: "Never", value: null },
+  { label: "1 day", value: 1 },
+  { label: "7 days", value: 7 },
+  { label: "30 days", value: 30 },
+];
+
+const MAX_USES_OPTIONS = [
+  { label: "No limit", value: null },
+  { label: "1 use", value: 1 },
+  { label: "5 uses", value: 5 },
+  { label: "10 uses", value: 10 },
+  { label: "25 uses", value: 25 },
+];
+
+interface GuildInvite {
+  id: string;
+  code: string;
+  expires_at: string | null;
+  max_uses: number | null;
+  uses: number;
+  created_at: string;
+}
+
+function InviteModal({ guildId, currentUserId, onClose }: {
+  guildId: string;
+  currentUserId: string;
+  onClose: () => void;
+}) {
+  const [invite, setInvite] = useState<GuildInvite | null>(null);
+  const [expiry, setExpiry] = useState<number | null>(7);
+  const [maxUses, setMaxUses] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+
+  // Load the most recent valid invite on open
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from("guild_invites")
+        .select("*")
+        .eq("guild_id", guildId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (data?.[0]) {
+        const inv = data[0] as GuildInvite;
+        const expired = inv.expires_at && new Date(inv.expires_at) < new Date();
+        const maxed = inv.max_uses !== null && inv.uses >= inv.max_uses;
+        if (!expired && !maxed) {
+          setInvite(inv);
+          setLoading(false);
+          return;
+        }
+      }
+      // No valid invite — create one immediately
+      await createInvite(7, null, false);
+    }
+    load();
+  }, []);
+
+  async function createInvite(days: number | null, uses: number | null, showCreating = true) {
+    if (showCreating) setCreating(true);
+    const expires_at = days ? new Date(Date.now() + days * 86400000).toISOString() : null;
+    const { data } = await supabase
+      .from("guild_invites")
+      .insert({ guild_id: guildId, created_by: currentUserId, expires_at, max_uses: uses })
+      .select()
+      .single();
+    if (data) setInvite(data as GuildInvite);
+    setCreating(false);
+    setLoading(false);
+  }
 
   function copy() {
-    navigator.clipboard.writeText(inviteCode);
+    if (!invite) return;
+    navigator.clipboard.writeText(invite.code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
+  function expiryLabel(inv: GuildInvite) {
+    if (!inv.expires_at) return "Never expires";
+    const diff = new Date(inv.expires_at).getTime() - Date.now();
+    const days = Math.ceil(diff / 86400000);
+    return days > 0 ? `Expires in ${days} day${days !== 1 ? "s" : ""}` : "Expired";
+  }
+
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-overlay rounded-lg p-6 w-full max-w-sm shadow-2xl">
-        <h2 className="text-text-primary text-xl font-bold mb-1">Invite Friends</h2>
-        <p className="text-text-muted text-sm mb-4">Share this invite code with anyone you want to add.</p>
-        <div className="flex gap-2">
-          <input
-            readOnly
-            value={inviteCode}
-            className="flex-1 bg-input-bg text-text-primary text-sm rounded px-3 py-2 outline-none"
-          />
-          <button
-            onClick={copy}
-            className="bg-accent hover:bg-accent-hover text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
-          >
-            {copied ? "Copied!" : "Copy"}
-          </button>
+      <div className="bg-overlay rounded-lg w-full max-w-sm shadow-2xl overflow-hidden">
+        <div className="px-6 pt-6 pb-4 border-b border-divider flex items-center justify-between">
+          <h2 className="text-text-primary text-xl font-bold">Invite People</h2>
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl leading-none">✕</button>
         </div>
-        <button onClick={onClose} className="mt-4 text-text-muted hover:text-text-primary text-sm">
-          Done
-        </button>
+
+        <div className="px-6 py-5 flex flex-col gap-4">
+          {/* Current invite code */}
+          <div>
+            <p className="text-text-secondary text-xs font-semibold uppercase tracking-wide mb-2">Invite Link</p>
+            {loading ? (
+              <div className="h-10 bg-input-bg rounded animate-pulse" />
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  readOnly
+                  value={invite?.code ?? ""}
+                  className="flex-1 bg-input-bg text-text-primary text-sm rounded px-3 py-2 outline-none font-mono"
+                />
+                <button
+                  onClick={copy}
+                  disabled={!invite}
+                  className="bg-accent hover:bg-accent-hover text-white text-sm font-semibold px-4 py-2 rounded transition-colors disabled:opacity-50"
+                >
+                  {copied ? "Copied!" : "Copy"}
+                </button>
+              </div>
+            )}
+            {invite && (
+              <p className="text-text-muted text-xs mt-1.5">
+                {expiryLabel(invite)}
+                {invite.max_uses !== null && ` · ${invite.uses}/${invite.max_uses} uses`}
+              </p>
+            )}
+          </div>
+
+          {/* Generate new invite */}
+          <div>
+            <p className="text-text-secondary text-xs font-semibold uppercase tracking-wide mb-2">Generate New Link</p>
+            <div className="flex gap-2 mb-3">
+              <div className="flex-1">
+                <p className="text-text-muted text-xs mb-1">Expires after</p>
+                <select
+                  value={expiry ?? "null"}
+                  onChange={(e) => setExpiry(e.target.value === "null" ? null : Number(e.target.value))}
+                  className="w-full bg-input-bg text-text-primary text-sm rounded px-3 py-2 outline-none"
+                >
+                  {EXPIRY_OPTIONS.map((o) => (
+                    <option key={String(o.value)} value={String(o.value)}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <p className="text-text-muted text-xs mb-1">Max uses</p>
+                <select
+                  value={maxUses ?? "null"}
+                  onChange={(e) => setMaxUses(e.target.value === "null" ? null : Number(e.target.value))}
+                  className="w-full bg-input-bg text-text-primary text-sm rounded px-3 py-2 outline-none"
+                >
+                  {MAX_USES_OPTIONS.map((o) => (
+                    <option key={String(o.value)} value={String(o.value)}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <button
+              onClick={() => createInvite(expiry, maxUses)}
+              disabled={creating}
+              className="w-full bg-input-bg hover:bg-msg-hover text-text-secondary text-sm py-2 rounded transition-colors disabled:opacity-50"
+            >
+              {creating ? "Generating…" : "Generate New Link"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
