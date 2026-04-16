@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Guild, Channel, Message, User, GuildMember, MessageReaction } from "../types";
+import type { Guild, Channel, Message, User, GuildMember, MessageReaction, DmChannel } from "../types";
 
 interface AppStore {
   // Auth
@@ -7,16 +7,21 @@ interface AppStore {
   setCurrentUser: (user: User | null) => void;
 
   // Navigation
+  viewMode: "guild" | "dm";
   currentGuildId: string | null;
   currentChannelId: string | null;
+  currentDmId: string | null;
+  setViewMode: (mode: "guild" | "dm") => void;
   setCurrentGuild: (guildId: string | null) => void;
   setCurrentChannel: (channelId: string | null) => void;
+  setCurrentDm: (dmId: string | null) => void;
 
   // Data
   guilds: Guild[];
   channels: Channel[];
   messages: Message[];
   members: GuildMember[];
+  dmChannels: DmChannel[];
 
   setGuilds: (guilds: Guild[]) => void;
   setChannels: (channels: Channel[]) => void;
@@ -26,6 +31,8 @@ interface AppStore {
   updateMessage: (id: string, partial: Partial<Message>) => void;
   removeMessage: (id: string) => void;
   setMembers: (members: GuildMember[]) => void;
+  setDmChannels: (dms: DmChannel[]) => void;
+  upsertDmChannel: (dm: DmChannel) => void;
 
   // Reactions: messageId → reactions
   reactions: Record<string, MessageReaction[]>;
@@ -39,17 +46,23 @@ export const useAppStore = create<AppStore>((set) => ({
   currentUser: null,
   setCurrentUser: (user) => set({ currentUser: user }),
 
+  viewMode: "guild",
   currentGuildId: null,
   currentChannelId: null,
+  currentDmId: null,
+  setViewMode: (mode) => set({ viewMode: mode, messages: [], reactions: {} }),
   setCurrentGuild: (guildId) =>
-    set({ currentGuildId: guildId, currentChannelId: null, channels: [], messages: [], members: [], reactions: {} }),
+    set({ viewMode: "guild", currentGuildId: guildId, currentChannelId: null, channels: [], messages: [], members: [], reactions: {} }),
   setCurrentChannel: (channelId) =>
     set({ currentChannelId: channelId, messages: [], reactions: {} }),
+  setCurrentDm: (dmId) =>
+    set({ viewMode: "dm", currentDmId: dmId, messages: [], reactions: {} }),
 
   guilds: [],
   channels: [],
   messages: [],
   members: [],
+  dmChannels: [],
 
   setGuilds: (guilds) => set({ guilds }),
   setChannels: (channels) => set({ channels }),
@@ -65,6 +78,13 @@ export const useAppStore = create<AppStore>((set) => ({
   removeMessage: (id) =>
     set((s) => ({ messages: s.messages.filter((m) => m.id !== id) })),
   setMembers: (members) => set({ members }),
+  setDmChannels: (dmChannels) => set({ dmChannels }),
+  upsertDmChannel: (dm) =>
+    set((s) => {
+      const exists = s.dmChannels.find((d) => d.id === dm.id);
+      if (exists) return { dmChannels: s.dmChannels.map((d) => d.id === dm.id ? dm : d) };
+      return { dmChannels: [dm, ...s.dmChannels] };
+    }),
 
   reactions: {},
   setMessageReactions: (messageId, reactions) =>

@@ -7,13 +7,14 @@ import type { GuildMember, UserStatus } from "../../types";
 interface MemberListProps {
   guildId: string | null;
   currentUserId?: string;
+  onOpenDm?: (userId: string) => void;
 }
 
 interface MemberWithStatus extends GuildMember {
   presence_status: UserStatus;
 }
 
-export function MemberList({ guildId, currentUserId }: MemberListProps) {
+export function MemberList({ guildId, currentUserId, onOpenDm }: MemberListProps) {
   const [members, setMembers] = useState<MemberWithStatus[]>([]);
 
   useEffect(() => {
@@ -38,14 +39,9 @@ export function MemberList({ guildId, currentUserId }: MemberListProps) {
 
     load();
 
-    // Subscribe to presence changes
     const sub = supabase
       .channel(`presence:guild:${guildId}`)
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "user_presence",
-      }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_presence" }, () => load())
       .subscribe();
 
     return () => { sub.unsubscribe(); };
@@ -58,39 +54,52 @@ export function MemberList({ guildId, currentUserId }: MemberListProps) {
     <div className="w-60 bg-sidebar flex flex-col shrink-0 overflow-y-auto">
       <div className="px-4 py-4">
         {online.length > 0 && (
-          <MemberSection label={`Online — ${online.length}`} members={online} />
+          <MemberSection label={`Online — ${online.length}`} members={online} currentUserId={currentUserId} onOpenDm={onOpenDm} />
         )}
         {offline.length > 0 && (
-          <MemberSection label={`Offline — ${offline.length}`} members={offline} />
+          <MemberSection label={`Offline — ${offline.length}`} members={offline} currentUserId={currentUserId} onOpenDm={onOpenDm} />
         )}
       </div>
     </div>
   );
 }
 
-function MemberSection({ label, members }: { label: string; members: MemberWithStatus[] }) {
+function MemberSection({ label, members, currentUserId, onOpenDm }: {
+  label: string;
+  members: MemberWithStatus[];
+  currentUserId?: string;
+  onOpenDm?: (userId: string) => void;
+}) {
   return (
     <div className="mb-4">
       <p className="text-text-muted text-xs font-semibold uppercase tracking-wide mb-2 px-2">{label}</p>
       {members.map((m) => {
         const user = (m as any).user;
         const name = m.nickname ?? user?.display_name ?? user?.username ?? "Unknown";
+        const isSelf = m.user_id === currentUserId;
         return (
           <div
             key={m.user_id}
-            className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-msg-hover cursor-pointer group"
+            onClick={() => !isSelf && onOpenDm?.(m.user_id)}
+            className={`flex items-center gap-2 px-2 py-1.5 rounded hover:bg-msg-hover group ${!isSelf && onOpenDm ? "cursor-pointer" : "cursor-default"}`}
           >
-            <div className="relative">
+            <div className="relative shrink-0">
               <Avatar src={user?.avatar_url} name={name} size={32} />
               <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-sidebar rounded-full flex items-center justify-center group-hover:bg-msg-hover transition-colors">
                 <StatusIndicator status={m.presence_status} size={10} />
               </span>
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className={`text-sm font-medium truncate ${m.presence_status === "offline" ? "text-text-muted" : "text-text-secondary"}`}>
                 {name}
               </p>
             </div>
+            {!isSelf && onOpenDm && (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"
+                className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+              </svg>
+            )}
           </div>
         );
       })}

@@ -7,11 +7,6 @@ type Segment =
   | { type: "code"; value: string }
   | { type: "link"; value: string; url: string };
 
-const URL_RE = /https?:\/\/[^\s<>"']+[^\s<>"'.,;!?]/g;
-const BOLD_RE = /\*\*(.+?)\*\*/gs;
-const ITALIC_RE = /(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)|_(.+?)_/gs;
-const INLINE_CODE_RE = /`([^`]+)`/g;
-
 function parseInline(text: string): Segment[] {
   // Apply patterns in priority order using a combined regex
   const combined = /(`[^`]+`|\*\*[\s\S]+?\*\*|(?<!\*)\*(?!\*)[\s\S]+?(?<!\*)\*(?!\*)|_[\s\S]+?_|https?:\/\/[^\s<>"']+[^\s<>"'.,;!?])/g;

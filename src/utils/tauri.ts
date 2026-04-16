@@ -12,8 +12,8 @@ export function isTauri(): boolean {
 export async function openUrl(url: string): Promise<void> {
   if (!/^https?:\/\//i.test(url)) return;
   if (isTauri()) {
-    const { open } = await import("@tauri-apps/plugin-opener");
-    await open(url);
+    const { openUrl: tauriOpenUrl } = await import("@tauri-apps/plugin-opener");
+    await tauriOpenUrl(url);
   } else {
     window.open(url, "_blank", "noopener,noreferrer");
   }

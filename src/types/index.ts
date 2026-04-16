@@ -58,3 +58,20 @@ export interface MessageReaction {
   user_id: string;
   emoji: string;
 }
+
+export interface DmChannel {
+  id: string;
+  created_at: string;
+  participants: User[];
+}
+
+export interface DmMessage {
+  id: string;
+  dm_channel_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+  edited_at: string | null;
+  deleted_at: string | null;
+  author?: User;
+}

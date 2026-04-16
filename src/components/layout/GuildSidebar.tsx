@@ -7,16 +7,20 @@ interface GuildSidebarProps {
   guilds: Guild[];
   currentGuildId: string | null;
   userId: string;
+  viewMode: "guild" | "dm";
   onGuildSelect: (guildId: string) => void;
   onGuildsRefresh: () => void;
+  onOpenDms: () => void;
 }
 
 export function GuildSidebar({
   guilds,
   currentGuildId,
   userId,
+  viewMode,
   onGuildSelect,
   onGuildsRefresh,
+  onOpenDms,
 }: GuildSidebarProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -24,6 +28,23 @@ export function GuildSidebar({
   return (
     <>
       <div className="w-18 bg-guild-rail flex flex-col items-center py-3 gap-2 shrink-0 overflow-y-auto">
+        {/* DM home button */}
+        <button
+          onClick={onOpenDms}
+          title="Direct Messages"
+          className={`w-12 h-12 transition-all overflow-hidden flex items-center justify-center ${
+            viewMode === "dm"
+              ? "rounded-2xl bg-accent text-white"
+              : "rounded-3xl hover:rounded-2xl bg-sidebar hover:bg-accent text-accent hover:text-white"
+          }`}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+          </svg>
+        </button>
+
+        <div className="w-8 h-px bg-divider my-1 rounded" />
+
         {/* Guild list */}
         {guilds.map((guild) => (
           <GuildButton

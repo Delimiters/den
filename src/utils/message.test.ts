@@ -44,6 +44,7 @@ function makeMessage(overrides: Partial<Message> = {}): Message {
     content: "hello",
     created_at: "2025-06-15T10:00:00Z",
     edited_at: null,
+    deleted_at: null,
     ...overrides,
   };
 }
