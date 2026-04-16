@@ -105,19 +105,19 @@ export function Message({
         )}
       </p>
       {Object.keys(reactionGroups).length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-1">
+        <div className="flex flex-wrap gap-1 mt-1.5">
           {Object.entries(reactionGroups).map(([emoji, { count, mine }]) => (
             <button
               key={emoji}
               onClick={() => onReact?.(message.id, emoji)}
-              className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-xs border transition-colors ${
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-sm border transition-colors ${
                 mine
-                  ? "bg-accent/20 border-accent/50 text-text-primary"
-                  : "bg-overlay border-divider text-text-secondary hover:bg-msg-hover"
+                  ? "bg-accent/25 border-accent text-text-primary"
+                  : "bg-white/5 border-white/10 text-text-secondary hover:bg-white/10 hover:border-white/20"
               }`}
             >
-              <span>{emoji}</span>
-              <span>{count}</span>
+              <span className="text-base leading-none">{emoji}</span>
+              <span className="text-xs font-medium">{count}</span>
             </button>
           ))}
         </div>
@@ -126,7 +126,7 @@ export function Message({
   );
 
   const actions = !isEditing ? (
-    <div className="absolute right-2 top-0 -translate-y-1/2 hidden group-hover:flex items-center bg-overlay border border-divider rounded shadow-lg z-10">
+    <div className="absolute right-4 -top-4 hidden group-hover:flex items-center bg-overlay border border-divider rounded shadow-lg z-10">
       {onReact && (
         <div className="relative" ref={pickerRef}>
           <button
