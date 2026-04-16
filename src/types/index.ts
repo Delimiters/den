@@ -52,3 +52,9 @@ export interface UserPresence {
   status: UserStatus;
   last_seen: string;
 }
+
+export interface MessageReaction {
+  message_id: string;
+  user_id: string;
+  emoji: string;
+}

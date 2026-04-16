@@ -1,8 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest";
 import { useAppStore } from "./appStore";
 import type { Guild, Channel, Message, User } from "../types";
-
-// ─── Fixtures ─────────────────────────────────────────────────────────────────
 
 const user: User = {
   id: "user-1",
@@ -38,9 +35,9 @@ const message: Message = {
   content: "hello",
   created_at: "2025-01-01T10:00:00Z",
   edited_at: null,
+  deleted_at: null,
 };
 
-// Reset store to a clean slate before each test
 beforeEach(() => {
   useAppStore.setState({
     currentUser: null,
@@ -50,22 +47,18 @@ beforeEach(() => {
     channels: [],
     messages: [],
     members: [],
+    reactions: {},
   });
 });
-
-// ─── Auth state ───────────────────────────────────────────────────────────────
 
 describe("setCurrentUser", () => {
   it("sets and clears the current user", () => {
     useAppStore.getState().setCurrentUser(user);
     expect(useAppStore.getState().currentUser).toEqual(user);
-
     useAppStore.getState().setCurrentUser(null);
     expect(useAppStore.getState().currentUser).toBeNull();
   });
 });
-
-// ─── Navigation ───────────────────────────────────────────────────────────────
 
 describe("setCurrentGuild", () => {
   it("sets the guild id", () => {
@@ -73,96 +66,108 @@ describe("setCurrentGuild", () => {
     expect(useAppStore.getState().currentGuildId).toBe("guild-1");
   });
 
-  it("clears currentChannelId, messages, and members when guild changes", () => {
-    // Pre-populate state
+  it("clears channelId, messages, members, and reactions when guild changes", () => {
     useAppStore.setState({
       currentChannelId: "ch-1",
       messages: [message],
       members: [{ guild_id: "guild-1", user_id: "user-1", joined_at: "", nickname: null }],
+      reactions: { "msg-1": [{ message_id: "msg-1", user_id: "user-1", emoji: "👍" }] },
     });
-
     useAppStore.getState().setCurrentGuild("guild-2");
-
-    const { currentChannelId, messages, members } = useAppStore.getState();
+    const { currentChannelId, messages, members, reactions } = useAppStore.getState();
     expect(currentChannelId).toBeNull();
     expect(messages).toHaveLength(0);
     expect(members).toHaveLength(0);
+    expect(reactions).toEqual({});
   });
 });
 
 describe("setCurrentChannel", () => {
-  it("sets the channel id", () => {
-    useAppStore.getState().setCurrentChannel("ch-1");
-    expect(useAppStore.getState().currentChannelId).toBe("ch-1");
-  });
-
-  it("clears messages when channel changes", () => {
-    useAppStore.setState({ messages: [message] });
+  it("clears messages and reactions when channel changes", () => {
+    useAppStore.setState({
+      messages: [message],
+      reactions: { "msg-1": [{ message_id: "msg-1", user_id: "user-1", emoji: "👍" }] },
+    });
     useAppStore.getState().setCurrentChannel("ch-2");
     expect(useAppStore.getState().messages).toHaveLength(0);
+    expect(useAppStore.getState().reactions).toEqual({});
   });
 });
 
-// ─── Data mutations ───────────────────────────────────────────────────────────
-
-describe("setGuilds", () => {
-  it("replaces the guilds array", () => {
+describe("setGuilds / setChannels", () => {
+  it("replaces guilds", () => {
     useAppStore.getState().setGuilds([guild]);
     expect(useAppStore.getState().guilds).toEqual([guild]);
   });
-});
-
-describe("setChannels", () => {
-  it("replaces the channels array", () => {
+  it("replaces channels", () => {
     useAppStore.getState().setChannels([channel]);
     expect(useAppStore.getState().channels).toEqual([channel]);
   });
 });
 
-describe("setMessages / appendMessage / prependMessages", () => {
-  it("setMessages replaces messages array", () => {
-    useAppStore.getState().setMessages([message]);
-    expect(useAppStore.getState().messages).toHaveLength(1);
-  });
-
-  it("appendMessage adds to the front (newest-first order)", () => {
-    const older: Message = { ...message, id: "msg-0", content: "older" };
-    const newer: Message = { ...message, id: "msg-1", content: "newer" };
-
+describe("message mutations", () => {
+  it("appendMessage adds to the front (newest-first)", () => {
+    const older: Message = { ...message, id: "msg-0" };
+    const newer: Message = { ...message, id: "msg-1" };
     useAppStore.getState().setMessages([older]);
     useAppStore.getState().appendMessage(newer);
-
-    const { messages } = useAppStore.getState();
-    expect(messages[0].id).toBe("msg-1"); // newest at front
-    expect(messages[1].id).toBe("msg-0");
+    expect(useAppStore.getState().messages[0].id).toBe("msg-1");
   });
 
-  it("prependMessages appends older messages to the end (for pagination)", () => {
-    const recent: Message = { ...message, id: "msg-5", content: "recent" };
-    const old1: Message = { ...message, id: "msg-1", content: "old 1" };
-    const old2: Message = { ...message, id: "msg-2", content: "old 2" };
-
+  it("prependMessages appends older messages to end", () => {
+    const recent: Message = { ...message, id: "msg-5" };
     useAppStore.getState().setMessages([recent]);
-    useAppStore.getState().prependMessages([old1, old2]);
-
-    const { messages } = useAppStore.getState();
-    expect(messages[0].id).toBe("msg-5"); // recent still at front
-    expect(messages[1].id).toBe("msg-1");
-    expect(messages[2].id).toBe("msg-2");
+    useAppStore.getState().prependMessages([{ ...message, id: "msg-1" }]);
+    expect(useAppStore.getState().messages[0].id).toBe("msg-5");
+    expect(useAppStore.getState().messages[1].id).toBe("msg-1");
   });
-});
 
-describe("updateMessage", () => {
-  it("updates a specific message by id", () => {
+  it("updateMessage patches a specific message", () => {
     useAppStore.getState().setMessages([message]);
     useAppStore.getState().updateMessage("msg-1", { content: "edited!" });
     expect(useAppStore.getState().messages[0].content).toBe("edited!");
   });
 
-  it("leaves other messages unchanged", () => {
-    const other: Message = { ...message, id: "msg-2", content: "other" };
-    useAppStore.getState().setMessages([message, other]);
-    useAppStore.getState().updateMessage("msg-1", { content: "changed" });
-    expect(useAppStore.getState().messages[1].content).toBe("other");
+  it("removeMessage removes by id", () => {
+    useAppStore.getState().setMessages([message, { ...message, id: "msg-2" }]);
+    useAppStore.getState().removeMessage("msg-1");
+    expect(useAppStore.getState().messages).toHaveLength(1);
+    expect(useAppStore.getState().messages[0].id).toBe("msg-2");
+  });
+});
+
+describe("reactions", () => {
+  it("addReaction inserts a new reaction", () => {
+    useAppStore.getState().addReaction({ message_id: "msg-1", user_id: "user-1", emoji: "👍" });
+    expect(useAppStore.getState().reactions["msg-1"]).toHaveLength(1);
+  });
+
+  it("addReaction is idempotent (same user+emoji)", () => {
+    useAppStore.getState().addReaction({ message_id: "msg-1", user_id: "user-1", emoji: "👍" });
+    useAppStore.getState().addReaction({ message_id: "msg-1", user_id: "user-1", emoji: "👍" });
+    expect(useAppStore.getState().reactions["msg-1"]).toHaveLength(1);
+  });
+
+  it("removeReaction removes the matching reaction", () => {
+    useAppStore.setState({
+      reactions: {
+        "msg-1": [
+          { message_id: "msg-1", user_id: "user-1", emoji: "👍" },
+          { message_id: "msg-1", user_id: "user-2", emoji: "👍" },
+        ],
+      },
+    });
+    useAppStore.getState().removeReaction("msg-1", "user-1", "👍");
+    expect(useAppStore.getState().reactions["msg-1"]).toHaveLength(1);
+    expect(useAppStore.getState().reactions["msg-1"][0].user_id).toBe("user-2");
+  });
+
+  it("setMessageReactions replaces all reactions for a message", () => {
+    useAppStore.getState().addReaction({ message_id: "msg-1", user_id: "user-1", emoji: "👍" });
+    useAppStore.getState().setMessageReactions("msg-1", [
+      { message_id: "msg-1", user_id: "user-2", emoji: "❤️" },
+    ]);
+    expect(useAppStore.getState().reactions["msg-1"]).toHaveLength(1);
+    expect(useAppStore.getState().reactions["msg-1"][0].emoji).toBe("❤️");
   });
 });

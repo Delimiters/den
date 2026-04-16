@@ -1,25 +1,38 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import { Avatar } from "../ui/Avatar";
-import type { Message as MessageType } from "../../types";
+import type { Message as MessageType, MessageReaction } from "../../types";
 import { formatTimestamp } from "../../utils/message";
+
+const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉", "🔥", "😡"];
 
 interface MessageProps {
   message: MessageType;
   compact?: boolean;
   currentUserId?: string;
+  reactions?: MessageReaction[];
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
+  onReact?: (messageId: string, emoji: string) => void;
 }
 
-export function Message({ message, compact = false, currentUserId, onEdit, onDelete }: MessageProps) {
+export function Message({
+  message,
+  compact = false,
+  currentUserId,
+  reactions = [],
+  onEdit,
+  onDelete,
+  onReact,
+}: MessageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
+  const [showPicker, setShowPicker] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   const author = message.author;
   const displayName = author?.display_name || author?.username || "Unknown";
   const isOwn = currentUserId === message.author_id;
-  const canModify = isOwn && (onEdit || onDelete);
 
   useEffect(() => {
     if (isEditing) {
@@ -29,38 +42,46 @@ export function Message({ message, compact = false, currentUserId, onEdit, onDel
     }
   }, [isEditing]);
 
-  // Keep editContent in sync if message updates externally
   useEffect(() => {
     if (!isEditing) setEditContent(message.content);
   }, [message.content, isEditing]);
 
-  function startEdit() {
-    setEditContent(message.content);
-    setIsEditing(true);
-  }
+  // Close picker on outside click
+  useEffect(() => {
+    if (!showPicker) return;
+    function handleClick(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowPicker(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showPicker]);
 
-  function cancelEdit() {
-    setEditContent(message.content);
-    setIsEditing(false);
-  }
+  function startEdit() { setEditContent(message.content); setIsEditing(true); }
+  function cancelEdit() { setEditContent(message.content); setIsEditing(false); }
 
   function submitEdit() {
     const trimmed = editContent.trim();
-    if (trimmed && trimmed !== message.content) {
-      onEdit?.(message.id, trimmed);
-    }
+    if (trimmed && trimmed !== message.content) onEdit?.(message.id, trimmed);
     setIsEditing(false);
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      submitEdit();
-    }
-    if (e.key === "Escape") {
-      cancelEdit();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitEdit(); }
+    if (e.key === "Escape") cancelEdit();
   }
+
+  // Group reactions by emoji
+  const reactionGroups = reactions.reduce<Record<string, { count: number; mine: boolean }>>(
+    (acc, r) => {
+      if (!acc[r.emoji]) acc[r.emoji] = { count: 0, mine: false };
+      acc[r.emoji].count++;
+      if (r.user_id === currentUserId) acc[r.emoji].mine = true;
+      return acc;
+    },
+    {}
+  );
 
   const contentBlock = isEditing ? (
     <div className="flex flex-col gap-1">
@@ -73,31 +94,73 @@ export function Message({ message, compact = false, currentUserId, onEdit, onDel
         rows={1}
         style={{ minHeight: "2.25rem" }}
       />
-      <p className="text-text-muted text-xs">
-        Enter to save · Escape to cancel
-      </p>
+      <p className="text-text-muted text-xs">Enter to save · Escape to cancel</p>
     </div>
   ) : (
-    <p className="text-text-secondary text-sm leading-relaxed break-words">
-      {message.content}
-      {message.edited_at && (
-        <span className="text-text-muted text-xs ml-1">(edited)</span>
+    <>
+      <p className="text-text-secondary text-sm leading-relaxed break-words">
+        {message.content}
+        {message.edited_at && (
+          <span className="text-text-muted text-xs ml-1">(edited)</span>
+        )}
+      </p>
+      {Object.keys(reactionGroups).length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1">
+          {Object.entries(reactionGroups).map(([emoji, { count, mine }]) => (
+            <button
+              key={emoji}
+              onClick={() => onReact?.(message.id, emoji)}
+              className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-xs border transition-colors ${
+                mine
+                  ? "bg-accent/20 border-accent/50 text-text-primary"
+                  : "bg-overlay border-divider text-text-secondary hover:bg-msg-hover"
+              }`}
+            >
+              <span>{emoji}</span>
+              <span>{count}</span>
+            </button>
+          ))}
+        </div>
       )}
-    </p>
+    </>
   );
 
-  const actions = canModify && !isEditing ? (
+  const actions = !isEditing ? (
     <div className="absolute right-2 top-0 -translate-y-1/2 hidden group-hover:flex items-center bg-overlay border border-divider rounded shadow-lg z-10">
-      {onEdit && (
+      {onReact && (
+        <div className="relative" ref={pickerRef}>
+          <button
+            onClick={() => setShowPicker((p) => !p)}
+            className="px-2 py-1 text-text-muted hover:text-text-primary hover:bg-msg-hover text-xs transition-colors"
+            title="Add reaction"
+          >
+            😄
+          </button>
+          {showPicker && (
+            <div className="absolute right-0 top-full mt-1 bg-overlay border border-divider rounded shadow-xl p-2 flex gap-1 z-20">
+              {QUICK_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => { onReact(message.id, emoji); setShowPicker(false); }}
+                  className="w-8 h-8 flex items-center justify-center rounded hover:bg-msg-hover text-lg transition-colors"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {isOwn && onEdit && (
         <button
           onClick={startEdit}
-          className="px-2 py-1 text-text-muted hover:text-text-primary hover:bg-msg-hover text-xs rounded-l transition-colors"
+          className="px-2 py-1 text-text-muted hover:text-text-primary hover:bg-msg-hover text-xs transition-colors"
           title="Edit message"
         >
           ✏️
         </button>
       )}
-      {onDelete && (
+      {isOwn && onDelete && (
         <button
           onClick={() => onDelete(message.id)}
           className="px-2 py-1 text-text-muted hover:text-danger hover:bg-msg-hover text-xs rounded-r transition-colors"

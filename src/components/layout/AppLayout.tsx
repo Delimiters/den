@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { useAppStore } from "../../stores/appStore";
 import { useRealtimeMessages } from "../../hooks/useRealtimeMessages";
 import { usePresence } from "../../hooks/usePresence";
+import { useReactions } from "../../hooks/useReactions";
 import { GuildSidebar } from "./GuildSidebar";
 import { ChannelSidebar } from "./ChannelSidebar";
 import { MemberList } from "./MemberList";
@@ -25,6 +26,10 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
   const { sendMessage, editMessage, deleteMessage } = useRealtimeMessages(currentChannelId);
   usePresence(currentUser);
+
+  const messages = useAppStore((s) => s.messages);
+  const messageIds = messages.map((m) => m.id);
+  const { toggleReaction } = useReactions(currentChannelId, messageIds);
 
   // Load guilds on mount
   useEffect(() => { loadGuilds(); }, [currentUser.id]);
@@ -102,6 +107,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               currentUserId={currentUser.id}
               onEdit={editMessage}
               onDelete={deleteMessage}
+              onReact={(msgId, emoji) => toggleReaction(msgId, emoji, currentUser.id)}
             />
             <MessageInput
               channelName={currentChannel.name}
