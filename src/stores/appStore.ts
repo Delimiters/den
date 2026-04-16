@@ -34,6 +34,15 @@ interface AppStore {
   setDmChannels: (dms: DmChannel[]) => void;
   upsertDmChannel: (dm: DmChannel) => void;
 
+  // Unread: channelIds with unread messages
+  unread: Record<string, true>;
+  markUnread: (channelId: string) => void;
+  markRead: (channelId: string) => void;
+
+  // Typing: channelId → set of usernames currently typing
+  typing: Record<string, string[]>;
+  setTyping: (channelId: string, usernames: string[]) => void;
+
   // Reactions: messageId → reactions
   reactions: Record<string, MessageReaction[]>;
   setMessageReactions: (messageId: string, reactions: MessageReaction[]) => void;
@@ -54,7 +63,11 @@ export const useAppStore = create<AppStore>((set) => ({
   setCurrentGuild: (guildId) =>
     set({ viewMode: "guild", currentGuildId: guildId, currentChannelId: null, channels: [], messages: [], members: [], reactions: {} }),
   setCurrentChannel: (channelId) =>
-    set({ currentChannelId: channelId, messages: [], reactions: {} }),
+    set((s) => {
+      const unread = { ...s.unread };
+      if (channelId) delete unread[channelId];
+      return { currentChannelId: channelId, messages: [], reactions: {}, unread };
+    }),
   setCurrentDm: (dmId) =>
     set({ viewMode: "dm", currentDmId: dmId, messages: [], reactions: {} }),
 
@@ -85,6 +98,16 @@ export const useAppStore = create<AppStore>((set) => ({
       if (exists) return { dmChannels: s.dmChannels.map((d) => d.id === dm.id ? dm : d) };
       return { dmChannels: [dm, ...s.dmChannels] };
     }),
+
+  unread: {},
+  markUnread: (channelId) =>
+    set((s) => ({ unread: { ...s.unread, [channelId]: true } })),
+  markRead: (channelId) =>
+    set((s) => { const u = { ...s.unread }; delete u[channelId]; return { unread: u }; }),
+
+  typing: {},
+  setTyping: (channelId, usernames) =>
+    set((s) => ({ typing: { ...s.typing, [channelId]: usernames } })),
 
   reactions: {},
   setMessageReactions: (messageId, reactions) =>

@@ -69,6 +69,40 @@ create table public.message_reactions (
   primary key (message_id, user_id, emoji)
 );
 
+-- Direct messages
+create table public.dm_channels (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamptz default now() not null
+);
+
+create table public.dm_participants (
+  dm_channel_id uuid references public.dm_channels(id) on delete cascade not null,
+  user_id uuid references public.users(id) on delete cascade not null,
+  primary key (dm_channel_id, user_id)
+);
+
+create table public.dm_messages (
+  id uuid default gen_random_uuid() primary key,
+  dm_channel_id uuid references public.dm_channels(id) on delete cascade not null,
+  author_id uuid references public.users(id) not null,
+  content text not null check (char_length(content) <= 2000),
+  created_at timestamptz default now() not null,
+  edited_at timestamptz,
+  deleted_at timestamptz
+);
+
+-- Guild invites (replaces single invite_code on guilds)
+create table public.guild_invites (
+  id uuid default gen_random_uuid() primary key,
+  guild_id uuid references public.guilds(id) on delete cascade not null,
+  code text unique not null default substring(encode(gen_random_bytes(6), 'hex') from 1 for 8),
+  created_by uuid references public.users(id) not null,
+  expires_at timestamptz,
+  max_uses integer,
+  uses integer not null default 0,
+  created_at timestamptz default now() not null
+);
+
 -- ============================================================
 -- Indexes
 -- ============================================================
@@ -76,6 +110,9 @@ create table public.message_reactions (
 create index messages_channel_id_created_at on public.messages (channel_id, created_at desc);
 create index guild_members_user_id on public.guild_members (user_id);
 create index channels_guild_id_position on public.channels (guild_id, position);
+create index dm_messages_channel_created on public.dm_messages (dm_channel_id, created_at desc);
+create index guild_invites_guild_id on public.guild_invites (guild_id);
+create index guild_invites_code on public.guild_invites (code);
 
 -- ============================================================
 -- Row Level Security

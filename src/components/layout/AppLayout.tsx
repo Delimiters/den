@@ -5,6 +5,8 @@ import { useRealtimeMessages } from "../../hooks/useRealtimeMessages";
 import { useDirectMessages, loadDmChannels, openDm } from "../../hooks/useDirectMessages";
 import { usePresence } from "../../hooks/usePresence";
 import { useReactions } from "../../hooks/useReactions";
+import { useUnreadTracker } from "../../hooks/useUnreadTracker";
+import { useTyping } from "../../hooks/useTyping";
 import { GuildSidebar } from "./GuildSidebar";
 import { ChannelSidebar } from "./ChannelSidebar";
 import { DmSidebar } from "./DmSidebar";
@@ -27,6 +29,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     currentChannelId, setCurrentChannel,
     currentDmId,
     dmChannels, setDmChannels,
+    unread, typing,
   } = useAppStore();
 
   const { sendMessage, editMessage, deleteMessage } = useRealtimeMessages(
@@ -36,6 +39,9 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     viewMode === "dm" ? currentDmId : null
   );
   usePresence(currentUser);
+  useUnreadTracker(currentGuildId);
+  const activeChannelId = viewMode === "guild" ? currentChannelId : currentDmId;
+  const { sendTyping } = useTyping(activeChannelId, currentUser.username);
 
   const messages = useAppStore((s) => s.messages);
   const messageIds = messages.map((m) => m.id);
@@ -125,6 +131,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           channels={channels}
           currentChannelId={currentChannelId}
           currentUser={currentUser}
+          unread={unread}
           onChannelSelect={(id) => setCurrentChannel(id)}
           onChannelsRefresh={() => currentGuildId && loadChannels(currentGuildId)}
           onSignOut={onSignOut}
@@ -161,11 +168,12 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               channelName={channelName}
               channelId={channelId}
               currentUserId={currentUser.id}
+              typingUsers={typing[activeChannelId ?? ""] ?? []}
               onEdit={editFn}
               onDelete={deleteFn}
               onReact={isGuildMode ? (msgId, emoji) => toggleReaction(msgId, emoji, currentUser.id) : undefined}
             />
-            <MessageInput channelName={channelName} onSend={sendFn} />
+            <MessageInput channelName={channelName} onSend={sendFn} onTyping={sendTyping} />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">

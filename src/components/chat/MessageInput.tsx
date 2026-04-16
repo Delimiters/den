@@ -3,9 +3,10 @@ import { useState, type KeyboardEvent } from "react";
 interface MessageInputProps {
   channelName: string;
   onSend: (content: string) => void;
+  onTyping?: () => void;
 }
 
-export function MessageInput({ channelName, onSend }: MessageInputProps) {
+export function MessageInput({ channelName, onSend, onTyping }: MessageInputProps) {
   const [content, setContent] = useState("");
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -27,7 +28,7 @@ export function MessageInput({ channelName, onSend }: MessageInputProps) {
       <div className="bg-input-bg rounded-lg flex items-end gap-2 px-4 py-2.5">
         <textarea
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={(e) => { setContent(e.target.value); onTyping?.(); }}
           onKeyDown={handleKeyDown}
           placeholder={`Message #${channelName}`}
           rows={1}

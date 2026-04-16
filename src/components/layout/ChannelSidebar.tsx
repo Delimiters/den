@@ -10,6 +10,7 @@ interface ChannelSidebarProps {
   channels: Channel[];
   currentChannelId: string | null;
   currentUser: User;
+  unread: Record<string, true>;
   onChannelSelect: (channelId: string) => void;
   onChannelsRefresh: () => void;
   onSignOut: () => void;
@@ -20,6 +21,7 @@ export function ChannelSidebar({
   channels,
   currentChannelId,
   currentUser,
+  unread,
   onChannelSelect,
   onChannelsRefresh,
   onSignOut,
@@ -66,6 +68,7 @@ export function ChannelSidebar({
                   key={ch.id}
                   channel={ch}
                   active={ch.id === currentChannelId}
+                  unread={!!unread[ch.id]}
                   onClick={() => onChannelSelect(ch.id)}
                 />
               ))}
@@ -78,6 +81,7 @@ export function ChannelSidebar({
                     key={ch.id}
                     channel={ch}
                     active={ch.id === currentChannelId}
+                    unread={false}
                     onClick={() => onChannelSelect(ch.id)}
                   />
                 ))}
@@ -190,10 +194,12 @@ function ChannelSection({
 function ChannelRow({
   channel,
   active,
+  unread,
   onClick,
 }: {
   channel: Channel;
   active: boolean;
+  unread: boolean;
   onClick: () => void;
 }) {
   const icon = channel.type === "voice" ? "🔊" : "#";
@@ -203,11 +209,16 @@ function ChannelRow({
       className={`w-full flex items-center gap-1.5 px-2 py-2 rounded text-sm transition-colors group ${
         active
           ? "bg-msg-hover text-text-primary"
+          : unread
+          ? "text-text-primary hover:bg-msg-hover"
           : "text-text-muted hover:bg-msg-hover hover:text-text-secondary"
       }`}
     >
       <span className="text-text-muted text-base leading-none">{icon}</span>
-      <span className="truncate">{channel.name}</span>
+      <span className="truncate flex-1 text-left">{channel.name}</span>
+      {unread && !active && (
+        <span className="w-2 h-2 rounded-full bg-text-primary shrink-0" />
+      )}
     </button>
   );
 }

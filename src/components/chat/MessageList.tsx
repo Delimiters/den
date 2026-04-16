@@ -11,12 +11,13 @@ interface MessageListProps {
   channelName: string;
   channelId?: string;
   currentUserId?: string;
+  typingUsers?: string[];
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
   onReact?: (messageId: string, emoji: string) => void;
 }
 
-export function MessageList({ channelName, channelId, currentUserId, onEdit, onDelete, onReact }: MessageListProps) {
+export function MessageList({ channelName, channelId, currentUserId, typingUsers = [], onEdit, onDelete, onReact }: MessageListProps) {
   const messages = useAppStore((s) => s.messages);
   const reactions = useAppStore((s) => s.reactions);
   const prependMessages = useAppStore((s) => s.prependMessages);
@@ -106,6 +107,27 @@ export function MessageList({ channelName, channelId, currentUserId, onEdit, onD
           />
         ))}
       </div>
+
+      {typingUsers.length > 0 && (
+        <div className="px-4 py-1 text-text-muted text-xs flex items-center gap-1.5">
+          <span className="flex gap-0.5">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="w-1 h-1 bg-text-muted rounded-full animate-bounce"
+                style={{ animationDelay: `${i * 150}ms` }}
+              />
+            ))}
+          </span>
+          <span>
+            {typingUsers.length === 1
+              ? `${typingUsers[0]} is typing…`
+              : typingUsers.length === 2
+              ? `${typingUsers[0]} and ${typingUsers[1]} are typing…`
+              : "Several people are typing…"}
+          </span>
+        </div>
+      )}
 
       <div ref={bottomRef} />
     </div>
