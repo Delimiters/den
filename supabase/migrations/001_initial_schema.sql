@@ -108,13 +108,23 @@ create policy "Authenticated users can create guilds"
   on public.guilds for insert to authenticated
   with check (owner_id = auth.uid());
 
--- Guild members
-create policy "Members can view their guild's member list"
+-- Helper function to get the current user's guild IDs without triggering
+-- recursive RLS evaluation on the guild_members table itself.
+create or replace function public.get_my_guild_ids()
+returns setof uuid
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  select guild_id from public.guild_members where user_id = auth.uid()
+$$;
+
+-- Guild members: use the security definer function to avoid infinite recursion
+-- (a policy on guild_members that queries guild_members causes a 500 error)
+create policy "Members can view guild memberships"
   on public.guild_members for select to authenticated
-  using (exists (
-    select 1 from public.guild_members my_mem
-    where my_mem.guild_id = guild_members.guild_id and my_mem.user_id = auth.uid()
-  ));
+  using (guild_id in (select public.get_my_guild_ids()));
 create policy "Users can join guilds"
   on public.guild_members for insert to authenticated
   with check (user_id = auth.uid());
