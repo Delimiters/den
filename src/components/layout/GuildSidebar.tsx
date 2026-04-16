@@ -151,7 +151,13 @@ function JoinGuildModal({ onClose, onJoined }: { onClose: () => void; onJoined: 
     setLoading(true);
     const { data, error } = await supabase.rpc("join_guild_by_invite", { invite: code.trim() });
     setLoading(false);
-    if (error) { setError("Invalid invite code."); return; }
+    if (error) {
+      const msg = error.message?.toLowerCase() ?? "";
+      if (msg.includes("expired")) setError("This invite link has expired.");
+      else if (msg.includes("maximum")) setError("This invite link has reached its maximum uses.");
+      else setError("Invalid invite code.");
+      return;
+    }
     onJoined(data as string);
   }
 

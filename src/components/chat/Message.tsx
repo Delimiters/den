@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import { Avatar } from "../ui/Avatar";
 import type { Message as MessageType, MessageReaction } from "../../types";
 import { formatTimestamp } from "../../utils/message";
+import { MessageContent } from "../../utils/markdown";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉", "🔥", "😡"];
 
@@ -99,7 +100,7 @@ export function Message({
   ) : (
     <>
       <p className="text-text-secondary text-base leading-relaxed break-words">
-        {message.content}
+        <MessageContent content={message.content} />
         {message.edited_at && (
           <span className="text-text-muted text-xs ml-1">(edited)</span>
         )}

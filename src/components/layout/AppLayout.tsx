@@ -104,6 +104,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
             {/* Messages + input */}
             <MessageList
               channelName={currentChannel.name}
+              channelId={currentChannel.id}
               currentUserId={currentUser.id}
               onEdit={editMessage}
               onDelete={deleteMessage}
