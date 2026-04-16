@@ -1,5 +1,5 @@
 -- ============================================================
--- Forge — Initial Schema
+-- Den — Initial Schema
 -- Run this in the Supabase SQL Editor for your project
 -- ============================================================
 

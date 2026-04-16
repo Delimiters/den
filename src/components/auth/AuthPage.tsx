@@ -33,7 +33,7 @@ export function AuthPage() {
         <p className="text-text-muted text-sm text-center mb-6">
           {mode === "login"
             ? "We're so excited to see you again!"
-            : "Join the forge."}
+            : "Welcome to Den."}
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
