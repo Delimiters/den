@@ -1,23 +1,15 @@
 import { Avatar } from "../ui/Avatar";
 import type { Message as MessageType } from "../../types";
-import { format, isToday, isYesterday } from "date-fns";
+import { formatTimestamp } from "../../utils/message";
 
 interface MessageProps {
   message: MessageType;
   compact?: boolean;
 }
 
-function formatTimestamp(iso: string, compact: boolean): string {
-  const date = new Date(iso);
-  if (compact) return format(date, "h:mm a");
-  if (isToday(date)) return `Today at ${format(date, "h:mm a")}`;
-  if (isYesterday(date)) return `Yesterday at ${format(date, "h:mm a")}`;
-  return format(date, "MM/dd/yyyy h:mm a");
-}
-
 export function Message({ message, compact = false }: MessageProps) {
   const author = message.author;
-  const displayName = author?.display_name ?? author?.username ?? "Unknown";
+  const displayName = author?.display_name || author?.username || "Unknown";
 
   if (compact) {
     return (

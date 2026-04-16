@@ -2,13 +2,7 @@ import { useEffect, useRef } from "react";
 import { Message } from "./Message";
 import { useAppStore } from "../../stores/appStore";
 import type { Message as MessageType } from "../../types";
-
-function shouldCompact(msg: MessageType, prev: MessageType | undefined): boolean {
-  if (!prev) return false;
-  if (msg.author_id !== prev.author_id) return false;
-  const diff = new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime();
-  return diff < 7 * 60 * 1000; // compact if same author within 7 minutes
-}
+import { shouldCompact } from "../../utils/message";
 
 interface MessageListProps {
   channelName: string;
