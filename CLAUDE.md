@@ -91,7 +91,7 @@ Supabase query pattern:
 ```typescript
 const { data, error } = await supabase
   .from("messages")
-  .select("*, author:users(*)")
+  .select("*, author:users!author_id(*)")
   .eq("channel_id", channelId)
   .is("deleted_at", null)
   .order("created_at", { ascending: false })

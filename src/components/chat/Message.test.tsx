@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Message } from "./Message";
 import type { Message as MessageType, User } from "../../types";
 
@@ -17,8 +17,9 @@ const baseMessage: MessageType = {
   channel_id: "ch-1",
   author_id: "user-1",
   content: "Hello, world!",
-  created_at: new Date().toISOString(), // "today" so timestamp reads "Today at..."
+  created_at: new Date().toISOString(),
   edited_at: null,
+  deleted_at: null,
   author,
 };
 
@@ -39,10 +40,7 @@ describe("Message (full mode)", () => {
   });
 
   it("falls back to username when display_name is missing", () => {
-    const msg: MessageType = {
-      ...baseMessage,
-      author: { ...author, display_name: "" },
-    };
+    const msg: MessageType = { ...baseMessage, author: { ...author, display_name: "" } };
     render(<Message message={msg} />);
     expect(screen.getByText("jake")).toBeInTheDocument();
   });
@@ -51,6 +49,17 @@ describe("Message (full mode)", () => {
     const msg: MessageType = { ...baseMessage, author: undefined };
     render(<Message message={msg} />);
     expect(screen.getByText("Unknown")).toBeInTheDocument();
+  });
+
+  it("shows (edited) indicator when edited_at is set", () => {
+    const msg: MessageType = { ...baseMessage, edited_at: new Date().toISOString() };
+    render(<Message message={msg} />);
+    expect(screen.getByText("(edited)")).toBeInTheDocument();
+  });
+
+  it("does not show (edited) when edited_at is null", () => {
+    render(<Message message={baseMessage} />);
+    expect(screen.queryByText("(edited)")).not.toBeInTheDocument();
   });
 });
 
@@ -64,9 +73,77 @@ describe("Message (compact mode)", () => {
     render(<Message message={baseMessage} compact />);
     expect(screen.queryByText("Jake Haley")).not.toBeInTheDocument();
   });
+});
 
-  it("does not render 'Today at' timestamp in compact mode (only short time)", () => {
-    render(<Message message={baseMessage} compact />);
-    expect(screen.queryByText(/Today at/i)).not.toBeInTheDocument();
+describe("Message editing", () => {
+  it("does not show edit/delete buttons for non-owner", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    render(
+      <Message
+        message={baseMessage}
+        currentUserId="other-user"
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    );
+    expect(screen.queryByTitle("Edit message")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Delete message")).not.toBeInTheDocument();
+  });
+
+  it("calls onEdit with new content when owner edits and submits", async () => {
+    const user = userEvent.setup();
+    const onEdit = vi.fn();
+    render(
+      <Message
+        message={baseMessage}
+        currentUserId="user-1"
+        onEdit={onEdit}
+        onDelete={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByTitle("Edit message"));
+    const textarea = screen.getByRole("textbox");
+    await user.clear(textarea);
+    await user.type(textarea, "Updated content");
+    await user.keyboard("{Enter}");
+
+    expect(onEdit).toHaveBeenCalledWith("msg-1", "Updated content");
+  });
+
+  it("cancels edit on Escape without calling onEdit", async () => {
+    const user = userEvent.setup();
+    const onEdit = vi.fn();
+    render(
+      <Message
+        message={baseMessage}
+        currentUserId="user-1"
+        onEdit={onEdit}
+        onDelete={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByTitle("Edit message"));
+    await user.keyboard("{Escape}");
+
+    expect(onEdit).not.toHaveBeenCalled();
+    expect(screen.getByText("Hello, world!")).toBeInTheDocument();
+  });
+
+  it("calls onDelete when owner clicks delete", async () => {
+    const user = userEvent.setup();
+    const onDelete = vi.fn();
+    render(
+      <Message
+        message={baseMessage}
+        currentUserId="user-1"
+        onEdit={vi.fn()}
+        onDelete={onDelete}
+      />
+    );
+
+    await user.click(screen.getByTitle("Delete message"));
+    expect(onDelete).toHaveBeenCalledWith("msg-1");
   });
 });

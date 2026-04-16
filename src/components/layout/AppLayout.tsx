@@ -23,7 +23,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     currentChannelId, setCurrentChannel,
   } = useAppStore();
 
-  const { sendMessage } = useRealtimeMessages(currentChannelId);
+  const { sendMessage, editMessage, deleteMessage } = useRealtimeMessages(currentChannelId);
   usePresence(currentUser);
 
   // Load guilds on mount
@@ -37,7 +37,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   async function loadGuilds() {
     const { data } = await supabase
       .from("guild_members")
-      .select("guild:guilds(*)")
+      .select("guild:guilds!guild_id(*)")
       .eq("user_id", currentUser.id);
     if (data) {
       const g = data.map((r: any) => r.guild).filter(Boolean) as Guild[];
@@ -97,7 +97,12 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
             </div>
 
             {/* Messages + input */}
-            <MessageList channelName={currentChannel.name} />
+            <MessageList
+              channelName={currentChannel.name}
+              currentUserId={currentUser.id}
+              onEdit={editMessage}
+              onDelete={deleteMessage}
+            />
             <MessageInput
               channelName={currentChannel.name}
               onSend={(content) => sendMessage(content, currentUser.id)}
@@ -115,7 +120,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
       </div>
 
       {/* Member list */}
-      {currentGuildId && <MemberList guildId={currentGuildId} />}
+      {currentGuildId && <MemberList guildId={currentGuildId} currentUserId={currentUser.id} />}
     </div>
   );
 }

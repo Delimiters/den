@@ -1,0 +1,44 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "TD" [ref=e5]:
+      - generic [ref=e8]: TD
+    - button "+" [ref=e10]
+    - button "Join a server" [ref=e11]:
+      - img [ref=e12]
+  - generic [ref=e14]:
+    - generic [ref=e15]:
+      - heading "Test Den Server" [level=2] [ref=e16]
+      - button "Invite people" [ref=e17]:
+        - img [ref=e18]
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e25]: Text Channels
+        - button "Add channel" [ref=e26]:
+          - img [ref=e27]
+      - button "# general" [ref=e29]:
+        - generic [ref=e30]: "#"
+        - generic [ref=e31]: general
+    - generic [ref=e32]:
+      - generic [ref=e34]: T
+      - generic [ref=e37]:
+        - paragraph [ref=e38]: testuser
+        - paragraph [ref=e39]: "@testuser"
+      - button "Sign out" [ref=e40]:
+        - img [ref=e41]
+  - generic [ref=e44]:
+    - generic [ref=e45]:
+      - generic [ref=e46]: "#"
+      - heading "general" [level=3] [ref=e47]
+    - generic [ref=e49]:
+      - generic [ref=e50]: "#"
+      - 'heading "Welcome to #general!" [level=3] [ref=e51]'
+      - paragraph [ref=e52]: "This is the start of the #general channel."
+    - generic [ref=e55]:
+      - 'textbox "Message #general" [active] [ref=e56]'
+      - button "Send message" [disabled] [ref=e57]:
+        - img [ref=e58]
+  - generic [ref=e62]:
+    - paragraph [ref=e63]: Online — 1
+    - generic [ref=e64] [cursor=pointer]:
+      - generic [ref=e66]: T
+      - paragraph [ref=e70]: testuser

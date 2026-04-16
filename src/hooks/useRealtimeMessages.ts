@@ -4,7 +4,7 @@ import { useAppStore } from "../stores/appStore";
 import type { Message } from "../types";
 
 export function useRealtimeMessages(channelId: string | null) {
-  const { setMessages, appendMessage } = useAppStore();
+  const { setMessages, appendMessage, updateMessage, removeMessage } = useAppStore();
   const subscriptionRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Load initial messages
@@ -16,7 +16,7 @@ export function useRealtimeMessages(channelId: string | null) {
 
     supabase
       .from("messages")
-      .select("*, author:users(*)")
+      .select("*, author:users!author_id(*)")
       .eq("channel_id", channelId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
@@ -26,11 +26,10 @@ export function useRealtimeMessages(channelId: string | null) {
       });
   }, [channelId]);
 
-  // Subscribe to new messages
+  // Subscribe to inserts and updates
   useEffect(() => {
     if (!channelId) return;
 
-    // Clean up previous subscription
     subscriptionRef.current?.unsubscribe();
 
     subscriptionRef.current = supabase
@@ -44,13 +43,32 @@ export function useRealtimeMessages(channelId: string | null) {
           filter: `channel_id=eq.${channelId}`,
         },
         async (payload) => {
-          // Fetch the full message with author info
           const { data } = await supabase
             .from("messages")
-            .select("*, author:users(*)")
+            .select("*, author:users!author_id(*)")
             .eq("id", payload.new.id)
             .single();
           if (data) appendMessage(data as Message);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `channel_id=eq.${channelId}`,
+        },
+        (payload) => {
+          const updated = payload.new as Message;
+          if (updated.deleted_at) {
+            removeMessage(updated.id);
+          } else {
+            updateMessage(updated.id, {
+              content: updated.content,
+              edited_at: updated.edited_at,
+            });
+          }
         }
       )
       .subscribe();
@@ -69,5 +87,21 @@ export function useRealtimeMessages(channelId: string | null) {
     });
   }
 
-  return { sendMessage };
+  async function editMessage(messageId: string, content: string) {
+    if (!content.trim()) return;
+    await supabase
+      .from("messages")
+      .update({ content: content.trim(), edited_at: new Date().toISOString() })
+      .eq("id", messageId);
+  }
+
+  async function deleteMessage(messageId: string) {
+    await supabase
+      .from("messages")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", messageId);
+    removeMessage(messageId);
+  }
+
+  return { sendMessage, editMessage, deleteMessage };
 }

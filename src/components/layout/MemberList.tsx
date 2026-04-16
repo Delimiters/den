@@ -6,13 +6,14 @@ import type { GuildMember, UserStatus } from "../../types";
 
 interface MemberListProps {
   guildId: string | null;
+  currentUserId?: string;
 }
 
 interface MemberWithStatus extends GuildMember {
   presence_status: UserStatus;
 }
 
-export function MemberList({ guildId }: MemberListProps) {
+export function MemberList({ guildId, currentUserId }: MemberListProps) {
   const [members, setMembers] = useState<MemberWithStatus[]>([]);
 
   useEffect(() => {
@@ -21,13 +22,15 @@ export function MemberList({ guildId }: MemberListProps) {
     async function load() {
       const { data } = await supabase
         .from("guild_members")
-        .select("*, user:users(*, presence:user_presence(status))")
+        .select("*, user:users!user_id(*, presence:user_presence!user_id(status))")
         .eq("guild_id", guildId);
 
       if (data) {
         const mapped: MemberWithStatus[] = data.map((m: any) => ({
           ...m,
-          presence_status: m.user?.presence?.[0]?.status ?? "offline",
+          presence_status: m.user_id === currentUserId
+            ? "online"
+            : m.user?.presence?.[0]?.status ?? "offline",
         }));
         setMembers(mapped);
       }

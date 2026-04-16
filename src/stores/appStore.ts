@@ -24,6 +24,7 @@ interface AppStore {
   prependMessages: (messages: Message[]) => void;
   appendMessage: (message: Message) => void;
   updateMessage: (id: string, partial: Partial<Message>) => void;
+  removeMessage: (id: string) => void;
   setMembers: (members: GuildMember[]) => void;
 }
 
@@ -54,5 +55,7 @@ export const useAppStore = create<AppStore>((set) => ({
     set((s) => ({
       messages: s.messages.map((m) => (m.id === id ? { ...m, ...partial } : m)),
     })),
+  removeMessage: (id) =>
+    set((s) => ({ messages: s.messages.filter((m) => m.id !== id) })),
   setMembers: (members) => set({ members }),
 }));

@@ -6,14 +6,16 @@ import { shouldCompact } from "../../utils/message";
 
 interface MessageListProps {
   channelName: string;
+  currentUserId?: string;
+  onEdit?: (messageId: string, content: string) => void;
+  onDelete?: (messageId: string) => void;
 }
 
-export function MessageList({ channelName }: MessageListProps) {
+export function MessageList({ channelName, currentUserId, onEdit, onDelete }: MessageListProps) {
   const messages = useAppStore((s) => s.messages);
   const bottomRef = useRef<HTMLDivElement>(null);
   const prevLength = useRef(0);
 
-  // Scroll to bottom on new message (not on load)
   useEffect(() => {
     if (messages.length > prevLength.current) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -48,6 +50,9 @@ export function MessageList({ channelName }: MessageListProps) {
             key={msg.id}
             message={msg}
             compact={shouldCompact(msg, ordered[i - 1])}
+            currentUserId={currentUserId}
+            onEdit={onEdit}
+            onDelete={onDelete}
           />
         ))}
       </div>

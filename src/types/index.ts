@@ -35,6 +35,7 @@ export interface Message {
   content: string;
   created_at: string;
   edited_at: string | null;
+  deleted_at: string | null;
   author?: User;
 }
 
