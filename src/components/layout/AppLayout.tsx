@@ -51,7 +51,10 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   );
 
   useEffect(() => { loadGuilds(); loadDms(); }, [currentUser.id]);
-  useEffect(() => { if (currentGuildId) loadChannels(currentGuildId); }, [currentGuildId]);
+  // Re-load channels when switching to guild mode OR when currentGuildId changes
+  useEffect(() => {
+    if (viewMode === "guild" && currentGuildId) loadChannels(currentGuildId);
+  }, [currentGuildId, viewMode]);
 
   async function loadGuilds() {
     const { data } = await supabase
@@ -61,7 +64,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     if (data) {
       const g = data.map((r: any) => r.guild).filter(Boolean) as Guild[];
       setGuilds(g);
-      if (g.length > 0 && !currentGuildId) setCurrentGuild(g[0].id);
+      if (g.length > 0 && !useAppStore.getState().currentGuildId) setCurrentGuild(g[0].id);
     }
   }
 

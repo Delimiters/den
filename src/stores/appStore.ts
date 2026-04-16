@@ -61,7 +61,11 @@ export const useAppStore = create<AppStore>((set) => ({
   currentDmId: null,
   setViewMode: (mode) => set({ viewMode: mode, messages: [], reactions: {} }),
   setCurrentGuild: (guildId) =>
-    set({ viewMode: "guild", currentGuildId: guildId, currentChannelId: null, channels: [], messages: [], members: [], reactions: {} }),
+    set((s) => {
+      // No-op if already viewing this guild in guild mode — prevents StrictMode double-fire clearing channels
+      if (s.currentGuildId === guildId && s.viewMode === "guild") return s;
+      return { viewMode: "guild", currentGuildId: guildId, currentChannelId: null, channels: [], messages: [], members: [], reactions: {} };
+    }),
   setCurrentChannel: (channelId) =>
     set((s) => {
       const unread = { ...s.unread };
