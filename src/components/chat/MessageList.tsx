@@ -55,7 +55,7 @@ export function MessageList({ channelName, channelId, currentUserId, typingUsers
 
     const { data } = await supabase
       .from("messages")
-      .select("*, author:users!author_id(*)")
+      .select("*, author:users!author_id(*), attachments(*)")
       .eq("channel_id", channelId)
       .is("deleted_at", null)
       .lt("created_at", oldest.created_at)

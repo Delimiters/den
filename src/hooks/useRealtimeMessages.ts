@@ -4,6 +4,8 @@ import { useAppStore } from "../stores/appStore";
 import { uploadFile } from "../utils/upload";
 import type { Message } from "../types";
 
+const MSG_SELECT = "*, author:users!author_id(*), attachments(*)";
+
 export function useRealtimeMessages(channelId: string | null) {
   const { setMessages, appendMessage, updateMessage, removeMessage } = useAppStore();
   const subscriptionRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -17,7 +19,7 @@ export function useRealtimeMessages(channelId: string | null) {
 
     supabase
       .from("messages")
-      .select("*, author:users!author_id(*)")
+      .select(MSG_SELECT)
       .eq("channel_id", channelId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
@@ -46,7 +48,7 @@ export function useRealtimeMessages(channelId: string | null) {
         async (payload) => {
           const { data } = await supabase
             .from("messages")
-            .select("*, author:users!author_id(*)")
+            .select(MSG_SELECT)
             .eq("id", payload.new.id)
             .single();
           if (data) appendMessage(data as Message);
@@ -88,7 +90,9 @@ export function useRealtimeMessages(channelId: string | null) {
       .select()
       .single();
 
-    if (msg && files?.length) {
+    if (!msg) return;
+
+    if (files?.length) {
       await Promise.all(
         files.map(async (file) => {
           const result = await uploadFile(file, authorId);
@@ -97,6 +101,16 @@ export function useRealtimeMessages(channelId: string | null) {
           }
         })
       );
+
+      // Re-fetch the message with attachments now that uploads are done
+      const { data: withAttachments } = await supabase
+        .from("messages")
+        .select(MSG_SELECT)
+        .eq("id", msg.id)
+        .single();
+      if (withAttachments) {
+        updateMessage(msg.id, { attachments: (withAttachments as Message).attachments });
+      }
     }
   }
 
