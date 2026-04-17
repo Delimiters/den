@@ -102,7 +102,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
   const isGuildMode = viewMode === "guild";
   const sendFn = isGuildMode
-    ? (content: string) => sendMessage(content, currentUser.id)
+    ? (content: string, files?: File[]) => sendMessage(content, currentUser.id, files)
     : (content: string) => sendDm(content, currentUser.id);
   const editFn = isGuildMode ? editMessage : editDm;
   const deleteFn = isGuildMode ? deleteMessage : deleteDm;

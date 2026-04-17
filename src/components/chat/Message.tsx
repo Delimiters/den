@@ -3,6 +3,7 @@ import { Avatar } from "../ui/Avatar";
 import type { Message as MessageType, MessageReaction } from "../../types";
 import { formatTimestamp } from "../../utils/message";
 import { MessageContent } from "../../utils/markdown";
+import { isImage, formatFileSize } from "../../utils/upload";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉", "🔥", "😡"];
 
@@ -105,6 +106,35 @@ export function Message({
           <span className="text-text-muted text-xs ml-1">(edited)</span>
         )}
       </p>
+      {message.attachments && message.attachments.length > 0 && (
+        <div className="flex flex-col gap-2 mt-2 max-w-md">
+          {message.attachments.map((att) =>
+            isImage(att.content_type) ? (
+              <img
+                key={att.id}
+                src={att.file_url}
+                alt={att.file_name}
+                className="rounded max-h-80 object-contain cursor-pointer"
+              />
+            ) : (
+              <a
+                key={att.id}
+                href={att.file_url}
+                download={att.file_name}
+                className="flex items-center gap-3 bg-overlay border border-divider rounded p-3 hover:bg-msg-hover transition-colors"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted shrink-0">
+                  <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                </svg>
+                <div className="min-w-0">
+                  <p className="text-text-primary text-sm truncate">{att.file_name}</p>
+                  <p className="text-text-muted text-xs">{formatFileSize(att.file_size)}</p>
+                </div>
+              </a>
+            )
+          )}
+        </div>
+      )}
       {Object.keys(reactionGroups).length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1.5">
           {Object.entries(reactionGroups).map(([emoji, { count, mine }]) => (

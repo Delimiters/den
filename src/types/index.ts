@@ -37,6 +37,7 @@ export interface Message {
   edited_at: string | null;
   deleted_at: string | null;
   author?: User;
+  attachments?: Attachment[];
 }
 
 export interface GuildMember {
@@ -57,6 +58,15 @@ export interface MessageReaction {
   message_id: string;
   user_id: string;
   emoji: string;
+}
+
+export interface Attachment {
+  id: string;
+  message_id: string;
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  content_type: string;
 }
 
 export interface DmChannel {

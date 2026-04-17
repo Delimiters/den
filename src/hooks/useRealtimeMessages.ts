@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { useAppStore } from "../stores/appStore";
+import { uploadFile } from "../utils/upload";
 import type { Message } from "../types";
 
 export function useRealtimeMessages(channelId: string | null) {
@@ -78,13 +79,25 @@ export function useRealtimeMessages(channelId: string | null) {
     };
   }, [channelId]);
 
-  async function sendMessage(content: string, authorId: string) {
-    if (!channelId || !content.trim()) return;
-    await supabase.from("messages").insert({
-      channel_id: channelId,
-      author_id: authorId,
-      content: content.trim(),
-    });
+  async function sendMessage(content: string, authorId: string, files?: File[]) {
+    if (!channelId || (!content.trim() && !files?.length)) return;
+
+    const { data: msg } = await supabase
+      .from("messages")
+      .insert({ channel_id: channelId, author_id: authorId, content: content.trim() })
+      .select()
+      .single();
+
+    if (msg && files?.length) {
+      await Promise.all(
+        files.map(async (file) => {
+          const result = await uploadFile(file, authorId);
+          if (result.ok) {
+            await supabase.from("attachments").insert({ message_id: msg.id, ...result.attachment });
+          }
+        })
+      );
+    }
   }
 
   async function editMessage(messageId: string, content: string) {
