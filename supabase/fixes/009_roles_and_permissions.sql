@@ -33,39 +33,7 @@ create table if not exists public.member_roles (
 
 create index if not exists member_roles_user on public.member_roles (guild_id, user_id);
 
--- RLS
-alter table public.roles enable row level security;
-alter table public.member_roles enable row level security;
-
-create policy "Guild members can view roles"
-  on public.roles for select to authenticated
-  using (guild_id in (select public.get_my_guild_ids()));
-
-create policy "Members with MANAGE_ROLES can insert roles"
-  on public.roles for insert to authenticated
-  with check (public.has_permission(auth.uid(), guild_id, 128));
-
-create policy "Members with MANAGE_ROLES can update roles"
-  on public.roles for update to authenticated
-  using (public.has_permission(auth.uid(), guild_id, 128));
-
-create policy "Members with MANAGE_ROLES can delete roles"
-  on public.roles for delete to authenticated
-  using (public.has_permission(auth.uid(), guild_id, 128));
-
-create policy "Guild members can view member_roles"
-  on public.member_roles for select to authenticated
-  using (guild_id in (select public.get_my_guild_ids()));
-
-create policy "Members with MANAGE_ROLES can assign roles"
-  on public.member_roles for insert to authenticated
-  with check (public.has_permission(auth.uid(), guild_id, 128));
-
-create policy "Members with MANAGE_ROLES can remove roles"
-  on public.member_roles for delete to authenticated
-  using (public.has_permission(auth.uid(), guild_id, 128));
-
--- Helper: check if a user has a permission in a guild (handles owner bypass + ADMINISTRATOR)
+-- has_permission must be created BEFORE the RLS policies that reference it
 create or replace function public.has_permission(
   p_user_id uuid,
   p_guild_id uuid,
@@ -98,6 +66,38 @@ begin
   return (v_combined & p_permission) <> 0;
 end;
 $$;
+
+-- RLS
+alter table public.roles enable row level security;
+alter table public.member_roles enable row level security;
+
+create policy "Guild members can view roles"
+  on public.roles for select to authenticated
+  using (guild_id in (select public.get_my_guild_ids()));
+
+create policy "Members with MANAGE_ROLES can insert roles"
+  on public.roles for insert to authenticated
+  with check (public.has_permission(auth.uid(), guild_id, 128));
+
+create policy "Members with MANAGE_ROLES can update roles"
+  on public.roles for update to authenticated
+  using (public.has_permission(auth.uid(), guild_id, 128));
+
+create policy "Members with MANAGE_ROLES can delete roles"
+  on public.roles for delete to authenticated
+  using (public.has_permission(auth.uid(), guild_id, 128));
+
+create policy "Guild members can view member_roles"
+  on public.member_roles for select to authenticated
+  using (guild_id in (select public.get_my_guild_ids()));
+
+create policy "Members with MANAGE_ROLES can assign roles"
+  on public.member_roles for insert to authenticated
+  with check (public.has_permission(auth.uid(), guild_id, 128));
+
+create policy "Members with MANAGE_ROLES can remove roles"
+  on public.member_roles for delete to authenticated
+  using (public.has_permission(auth.uid(), guild_id, 128));
 
 -- Create a default @everyone role for all existing guilds
 insert into public.roles (guild_id, name, color, permissions_bitfield, position)
