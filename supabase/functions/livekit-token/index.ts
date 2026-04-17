@@ -17,10 +17,11 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return new Response("Unauthorized", { status: 401, headers: CORS });
 
-  // Validate the caller is an authenticated Supabase user
+  // Validate the caller — use anon client with user's auth header so RLS works
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
   );
   const { data: { user }, error: authError } = await supabase.auth.getUser(
     authHeader.replace("Bearer ", "")

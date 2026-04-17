@@ -37,7 +37,7 @@ export function ChannelSidebar({
   onOpenServerSettings,
 }: ChannelSidebarProps) {
   const [showInvite, setShowInvite] = useState(false);
-  const [showAddChannel, setShowAddChannel] = useState(false);
+  const [showAddChannel, setShowAddChannel] = useState<"text" | "voice" | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [voiceSessions, setVoiceSessions] = useState<VoiceSession[]>([]);
 
@@ -109,7 +109,7 @@ export function ChannelSidebar({
           <>
             <ChannelSection
               label="Text Channels"
-              onAdd={canManageChannels ? () => setShowAddChannel(true) : undefined}
+              onAdd={canManageChannels ? () => setShowAddChannel("text") : undefined}
             >
               {textChannels.map((ch) => (
                 <ChannelRow
@@ -123,7 +123,7 @@ export function ChannelSidebar({
             </ChannelSection>
 
             {voiceChannels.length > 0 && (
-              <ChannelSection label="Voice Channels" onAdd={canManageChannels ? () => setShowAddChannel(true) : undefined}>
+              <ChannelSection label="Voice Channels" onAdd={canManageChannels ? () => setShowAddChannel("voice") : undefined}>
                 {voiceChannels.map((ch) => {
                   const participants = voiceSessions.filter((s) => s.channel_id === ch.id);
                   return (
@@ -214,8 +214,9 @@ export function ChannelSidebar({
       {showAddChannel && guild && (
         <AddChannelModal
           guildId={guild.id}
-          onClose={() => setShowAddChannel(false)}
-          onCreated={() => { setShowAddChannel(false); onChannelsRefresh(); }}
+          initialType={showAddChannel}
+          onClose={() => setShowAddChannel(null)}
+          onCreated={() => { setShowAddChannel(null); onChannelsRefresh(); }}
         />
       )}
     </div>
@@ -466,8 +467,9 @@ function InviteModal({ guildId, currentUserId, onClose }: {
   );
 }
 
-function AddChannelModal({ guildId, onClose, onCreated }: { guildId: string; onClose: () => void; onCreated: () => void }) {
+function AddChannelModal({ guildId, initialType = "text", onClose, onCreated }: { guildId: string; initialType?: "text" | "voice"; onClose: () => void; onCreated: () => void }) {
   const [name, setName] = useState("");
+  const [type, setType] = useState<"text" | "voice">(initialType);
   const [loading, setLoading] = useState(false);
 
   async function handleCreate() {
@@ -476,7 +478,7 @@ function AddChannelModal({ guildId, onClose, onCreated }: { guildId: string; onC
     await supabase.from("channels").insert({
       guild_id: guildId,
       name: name.toLowerCase().replace(/\s+/g, "-"),
-      type: "text",
+      type,
       position: 99,
     });
     setLoading(false);
@@ -487,12 +489,37 @@ function AddChannelModal({ guildId, onClose, onCreated }: { guildId: string; onC
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="bg-overlay rounded-lg p-6 w-full max-w-sm shadow-2xl">
         <h2 className="text-text-primary text-xl font-bold mb-4">Create Channel</h2>
+
+        {/* Channel type selector */}
+        <div className="flex gap-2 mb-4">
+          {(["text", "voice"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setType(t)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded border text-sm font-medium transition-colors ${
+                type === t
+                  ? "border-accent bg-accent/10 text-text-primary"
+                  : "border-divider text-text-muted hover:border-white/20 hover:text-text-secondary"
+              }`}
+            >
+              {t === "text" ? (
+                <span className="font-bold">#</span>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z" />
+                </svg>
+              )}
+              {t === "text" ? "Text" : "Voice"}
+            </button>
+          ))}
+        </div>
+
         <input
           autoFocus
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-          placeholder="new-channel"
+          placeholder={type === "voice" ? "new-voice-channel" : "new-channel"}
           className="w-full bg-input-bg text-text-primary rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent mb-4"
         />
         <div className="flex justify-end gap-2">
