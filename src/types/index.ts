@@ -69,6 +69,22 @@ export interface Attachment {
   content_type: string;
 }
 
+export interface Role {
+  id: string;
+  guild_id: string;
+  name: string;
+  color: string;
+  permissions_bitfield: number;
+  position: number;
+  created_at: string;
+}
+
+export interface MemberRole {
+  guild_id: string;
+  user_id: string;
+  role_id: string;
+}
+
 export interface DmChannel {
   id: string;
   created_at: string;

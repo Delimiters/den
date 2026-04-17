@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAppStore } from "../../stores/appStore";
 import { useRealtimeMessages } from "../../hooks/useRealtimeMessages";
@@ -7,12 +7,14 @@ import { usePresence } from "../../hooks/usePresence";
 import { useReactions } from "../../hooks/useReactions";
 import { useUnreadTracker } from "../../hooks/useUnreadTracker";
 import { useTyping } from "../../hooks/useTyping";
+import { useRoles } from "../../hooks/useRoles";
 import { GuildSidebar } from "./GuildSidebar";
 import { ChannelSidebar } from "./ChannelSidebar";
 import { DmSidebar } from "./DmSidebar";
 import { MemberList } from "./MemberList";
 import { MessageList } from "../chat/MessageList";
 import { MessageInput } from "../chat/MessageInput";
+import { ServerSettingsModal } from "./ServerSettingsModal";
 import type { User, Guild, Channel } from "../../types";
 
 interface AppLayoutProps {
@@ -21,6 +23,8 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
+  const [showServerSettings, setShowServerSettings] = useState(false);
+
   const {
     viewMode, setCurrentGuild, setCurrentDm,
     guilds, setGuilds,
@@ -38,6 +42,13 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const { sendDm, editDm, deleteDm } = useDirectMessages(
     viewMode === "dm" ? currentDmId : null
   );
+  const currentGuild = guilds.find((g) => g.id === currentGuildId);
+  const { roles, createRole, updateRole, deleteRole } = useRoles(
+    currentGuildId,
+    currentUser.id,
+    currentGuild?.owner_id ?? null
+  );
+
   usePresence(currentUser);
   useUnreadTracker(currentGuildId);
   const activeChannelId = viewMode === "guild" ? currentChannelId : currentDmId;
@@ -95,7 +106,6 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     setCurrentDm(dmId);
   }
 
-  const currentGuild = guilds.find((g) => g.id === currentGuildId);
   const currentChannel = channels.find((c) => c.id === currentChannelId);
   const currentDm = dmChannels.find((d) => d.id === currentDmId);
   const dmPartner = currentDm?.participants[0];
@@ -138,6 +148,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           onChannelSelect={(id) => setCurrentChannel(id)}
           onChannelsRefresh={() => currentGuildId && loadChannels(currentGuildId)}
           onSignOut={onSignOut}
+          onOpenServerSettings={() => setShowServerSettings(true)}
         />
       ) : (
         <DmSidebar
@@ -197,6 +208,19 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           guildId={currentGuildId}
           currentUserId={currentUser.id}
           onOpenDm={handleOpenDm}
+        />
+      )}
+
+      {/* Server settings modal */}
+      {showServerSettings && currentGuild && (
+        <ServerSettingsModal
+          guild={currentGuild}
+          currentUserId={currentUser.id}
+          roles={roles}
+          onCreateRole={createRole}
+          onUpdateRole={updateRole}
+          onDeleteRole={deleteRole}
+          onClose={() => setShowServerSettings(false)}
         />
       )}
     </div>

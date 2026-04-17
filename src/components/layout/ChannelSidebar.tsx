@@ -14,6 +14,7 @@ interface ChannelSidebarProps {
   onChannelSelect: (channelId: string) => void;
   onChannelsRefresh: () => void;
   onSignOut: () => void;
+  onOpenServerSettings?: () => void;
 }
 
 export function ChannelSidebar({
@@ -25,6 +26,7 @@ export function ChannelSidebar({
   onChannelSelect,
   onChannelsRefresh,
   onSignOut,
+  onOpenServerSettings,
 }: ChannelSidebarProps) {
   const [showInvite, setShowInvite] = useState(false);
   const [showAddChannel, setShowAddChannel] = useState(false);
@@ -41,17 +43,30 @@ export function ChannelSidebar({
           {guild?.name ?? "Select a server"}
         </h2>
         {guild && (
-          <button
-            onClick={() => setShowInvite(true)}
-            className="text-text-muted hover:text-text-primary transition-colors"
-            title="Invite people"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm-1 0a2 2 0 11-4 0 2 2 0 014 0z" />
-              <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 8a8 8 0 100-16 8 8 0 000 16z" />
-              <path d="M12 6v6m0 0v6m0-6h6m-6 0H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowInvite(true)}
+              className="text-text-muted hover:text-text-primary transition-colors"
+              title="Invite people"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm-1 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 8a8 8 0 100-16 8 8 0 000 16z" />
+                <path d="M12 6v6m0 0v6m0-6h6m-6 0H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" />
+              </svg>
+            </button>
+            {onOpenServerSettings && (
+              <button
+                onClick={onOpenServerSettings}
+                className="text-text-muted hover:text-text-primary transition-colors"
+                title="Server settings"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                </svg>
+              </button>
+            )}
+          </div>
         )}
       </div>
 
