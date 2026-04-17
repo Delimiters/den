@@ -19,9 +19,9 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, onDmSelect, on
       </div>
 
       {/* DM list */}
-      <div className="flex-1 overflow-y-auto px-2 py-2">
+      <div className="flex-1 overflow-y-auto px-2 py-3">
         {dmChannels.length === 0 ? (
-          <p className="text-text-muted text-xs px-2 py-2">No conversations yet.<br />Click a member to start one.</p>
+          <p className="text-text-muted text-xs px-3 py-2">No conversations yet.<br />Click a member to start one.</p>
         ) : (
           dmChannels.map((dm) => {
             const other = dm.participants[0];
@@ -31,10 +31,10 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, onDmSelect, on
               <button
                 key={dm.id}
                 onClick={() => onDmSelect(dm.id)}
-                className={`w-full flex items-center gap-2 px-2 py-2 rounded transition-colors ${
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors ${
                   dm.id === currentDmId
-                    ? "bg-msg-hover text-text-primary"
-                    : "text-text-muted hover:bg-msg-hover hover:text-text-secondary"
+                    ? "bg-white/[0.12] text-text-primary"
+                    : "text-text-muted hover:bg-white/[0.06] hover:text-text-secondary"
                 }`}
               >
                 <div className="relative shrink-0">
@@ -51,7 +51,7 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, onDmSelect, on
       </div>
 
       {/* User panel */}
-      <div className="h-14 bg-overlay px-2 flex items-center gap-2 shrink-0">
+      <div className="h-14 bg-overlay px-3 flex items-center gap-2 shrink-0">
         <div className="relative">
           <Avatar src={currentUser.avatar_url} name={currentUser.display_name || currentUser.username} size={32} />
           <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-overlay rounded-full flex items-center justify-center">

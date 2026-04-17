@@ -85,7 +85,7 @@ export function MemberList({
 
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0 overflow-y-auto">
-      <div className="px-4 py-4">
+      <div className="px-3 py-4">
         {online.length > 0 && (
           <MemberSection
             label={`Online — ${online.length}`}
@@ -180,7 +180,7 @@ function MemberSection({ label, members, currentUserId, onOpenDm, onContextMenu 
 }) {
   return (
     <div className="mb-4">
-      <p className="text-text-muted text-xs font-semibold uppercase tracking-wide mb-2 px-2">{label}</p>
+      <p className="text-text-muted text-xs font-semibold uppercase tracking-wide mb-2 px-1">{label}</p>
       {members.map((m) => {
         const user = (m as any).user;
         const name = m.nickname ?? user?.display_name ?? user?.username ?? "Unknown";
@@ -190,7 +190,7 @@ function MemberSection({ label, members, currentUserId, onOpenDm, onContextMenu 
             key={m.user_id}
             onClick={() => !isSelf && onOpenDm?.(m.user_id)}
             onContextMenu={(e) => onContextMenu(e, m)}
-            className={`flex items-center gap-2 px-2 py-1.5 rounded hover:bg-msg-hover group ${!isSelf && onOpenDm ? "cursor-pointer" : "cursor-default"}`}
+            className={`flex items-center gap-2 px-2 py-2 rounded hover:bg-msg-hover group ${!isSelf && onOpenDm ? "cursor-pointer" : "cursor-default"}`}
           >
             <div className="relative shrink-0">
               <Avatar src={user?.avatar_url} name={name} size={32} />

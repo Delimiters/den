@@ -40,7 +40,7 @@ export function ChannelSidebar({
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
       {/* Guild header */}
-      <div className="h-12 px-4 flex items-center justify-between border-b border-divider shadow-sm shrink-0">
+      <div className="h-12 px-4 flex items-center justify-between border-b border-divider shadow-sm shrink-0 gap-2">
         <h2 className="text-text-primary font-semibold text-sm truncate">
           {guild?.name ?? "Select a server"}
         </h2>
@@ -73,7 +73,7 @@ export function ChannelSidebar({
       </div>
 
       {/* Channel list */}
-      <div className="flex-1 overflow-y-auto px-2 py-2">
+      <div className="flex-1 overflow-y-auto px-2 py-3">
         {guild && (
           <>
             <ChannelSection
@@ -109,7 +109,7 @@ export function ChannelSidebar({
       </div>
 
       {/* User panel */}
-      <div className="h-14 bg-overlay px-2 flex items-center gap-2 shrink-0">
+      <div className="h-14 bg-overlay px-3 flex items-center gap-2 shrink-0">
         <div className="relative">
           <Avatar
             src={currentUser.avatar_url}
@@ -187,7 +187,7 @@ function ChannelSection({
 }) {
   return (
     <div className="mb-4">
-      <div className="flex items-center justify-between px-1 mb-1 group">
+      <div className="flex items-center justify-between px-2 mb-1 group">
         <span className="text-text-muted text-xs font-semibold uppercase tracking-wide">
           {label}
         </span>
@@ -223,7 +223,7 @@ function ChannelRow({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-sm transition-colors group ${
+      className={`w-full flex items-center gap-2 px-3 py-1.5 rounded text-sm transition-colors group ${
         active
           ? "bg-white/[0.12] text-text-primary"
           : unread
