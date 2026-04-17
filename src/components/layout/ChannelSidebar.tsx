@@ -5,6 +5,12 @@ import { Avatar } from "../ui/Avatar";
 import { StatusIndicator } from "../ui/StatusIndicator";
 import { UserSettingsModal } from "./UserSettingsModal";
 
+interface VoiceSession {
+  user_id: string;
+  channel_id: string;
+  user?: { username: string; display_name: string; avatar_url: string | null };
+}
+
 interface ChannelSidebarProps {
   guild: Guild | undefined;
   channels: Channel[];
@@ -33,9 +39,34 @@ export function ChannelSidebar({
   const [showInvite, setShowInvite] = useState(false);
   const [showAddChannel, setShowAddChannel] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [voiceSessions, setVoiceSessions] = useState<VoiceSession[]>([]);
 
   const textChannels = channels.filter((c) => c.type === "text");
   const voiceChannels = channels.filter((c) => c.type === "voice");
+
+  // Load + subscribe to voice sessions for the current guild
+  useEffect(() => {
+    if (!guild?.id) { setVoiceSessions([]); return; }
+
+    supabase
+      .from("voice_sessions")
+      .select("user_id, channel_id, user:users!user_id(username, display_name, avatar_url)")
+      .eq("guild_id", guild.id)
+      .then(({ data }) => { if (data) setVoiceSessions(data as unknown as VoiceSession[]); });
+
+    const sub = supabase
+      .channel(`voice:${guild.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "voice_sessions", filter: `guild_id=eq.${guild.id}` }, async () => {
+        const { data } = await supabase
+          .from("voice_sessions")
+          .select("user_id, channel_id, user:users!user_id(username, display_name, avatar_url)")
+          .eq("guild_id", guild.id);
+        if (data) setVoiceSessions(data as unknown as VoiceSession[]);
+      })
+      .subscribe();
+
+    return () => { sub.unsubscribe(); };
+  }, [guild?.id]);
 
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
@@ -92,16 +123,31 @@ export function ChannelSidebar({
             </ChannelSection>
 
             {voiceChannels.length > 0 && (
-              <ChannelSection label="Voice Channels">
-                {voiceChannels.map((ch) => (
-                  <ChannelRow
-                    key={ch.id}
-                    channel={ch}
-                    active={ch.id === currentChannelId}
-                    unread={false}
-                    onClick={() => onChannelSelect(ch.id)}
-                  />
-                ))}
+              <ChannelSection label="Voice Channels" onAdd={canManageChannels ? () => setShowAddChannel(true) : undefined}>
+                {voiceChannels.map((ch) => {
+                  const participants = voiceSessions.filter((s) => s.channel_id === ch.id);
+                  return (
+                    <div key={ch.id}>
+                      <ChannelRow
+                        channel={ch}
+                        active={ch.id === currentChannelId}
+                        unread={false}
+                        participantCount={participants.length}
+                        onClick={() => onChannelSelect(ch.id)}
+                      />
+                      {/* Show participant names below the voice channel row */}
+                      {participants.map((s) => {
+                        const name = (s.user as any)?.display_name || (s.user as any)?.username || "Unknown";
+                        return (
+                          <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-0.5">
+                            <Avatar src={(s.user as any)?.avatar_url ?? null} name={name} size={14} />
+                            <span className="text-text-muted text-xs truncate">{name}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </ChannelSection>
             )}
           </>
@@ -212,14 +258,21 @@ function ChannelRow({
   channel,
   active,
   unread,
+  participantCount = 0,
   onClick,
 }: {
   channel: Channel;
   active: boolean;
   unread: boolean;
+  participantCount?: number;
   onClick: () => void;
 }) {
-  const icon = channel.type === "voice" ? "🔊" : "#";
+  const icon = channel.type === "voice" ? (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z" />
+    </svg>
+  ) : "#";
+
   return (
     <button
       onClick={onClick}
@@ -231,9 +284,12 @@ function ChannelRow({
           : "text-text-muted hover:bg-white/[0.06] hover:text-text-secondary"
       }`}
     >
-      <span className="text-text-muted text-base leading-none">{icon}</span>
+      <span className="text-text-muted leading-none shrink-0">{icon}</span>
       <span className="truncate flex-1 text-left">{channel.name}</span>
-      {unread && !active && (
+      {participantCount > 0 && (
+        <span className="text-text-muted text-xs shrink-0">{participantCount}</span>
+      )}
+      {unread && !active && channel.type !== "voice" && (
         <span className="w-2 h-2 rounded-full bg-text-primary shrink-0" />
       )}
     </button>

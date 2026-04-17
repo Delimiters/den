@@ -8,6 +8,7 @@ import { useReactions } from "../../hooks/useReactions";
 import { useUnreadTracker } from "../../hooks/useUnreadTracker";
 import { useTyping } from "../../hooks/useTyping";
 import { useRoles } from "../../hooks/useRoles";
+import { useVoiceChannel } from "../../hooks/useVoiceChannel";
 import { hasPermission, Permissions } from "../../utils/permissions";
 import { GuildSidebar } from "./GuildSidebar";
 import { ChannelSidebar } from "./ChannelSidebar";
@@ -16,6 +17,7 @@ import { MemberList } from "./MemberList";
 import { MessageList } from "../chat/MessageList";
 import { MessageInput } from "../chat/MessageInput";
 import { ServerSettingsModal } from "./ServerSettingsModal";
+import { VoiceChannelView } from "../voice/VoiceChannelView";
 import type { User, Guild, Channel } from "../../types";
 
 interface AppLayoutProps {
@@ -49,6 +51,9 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     currentUser.id,
     currentGuild?.owner_id ?? null
   );
+
+  const { voiceChannelId, voiceToken, voiceLivekitUrl } = useAppStore();
+  const { join: joinVoice, leave: leaveVoice } = useVoiceChannel(currentUser.id);
 
   usePresence(currentUser);
   useUnreadTracker(currentGuildId);
@@ -164,7 +169,33 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {hasContent ? (
+        {/* Voice channel view — replaces chat area when a voice channel is selected */}
+        {isGuildMode && currentChannel?.type === "voice" && voiceChannelId === currentChannel.id && voiceToken && voiceLivekitUrl ? (
+          <VoiceChannelView
+            token={voiceToken}
+            livekitUrl={voiceLivekitUrl}
+            channel={currentChannel}
+            currentUserId={currentUser.id}
+            onLeave={leaveVoice}
+          />
+        ) : isGuildMode && currentChannel?.type === "voice" ? (
+          /* Voice channel join screen */
+          <div className="flex-1 flex flex-col items-center justify-center gap-4">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted">
+              <path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z" />
+            </svg>
+            <div className="text-center">
+              <h3 className="text-text-primary font-semibold text-lg">{currentChannel.name}</h3>
+              <p className="text-text-muted text-sm mt-1">Voice Channel</p>
+            </div>
+            <button
+              onClick={() => currentGuildId && joinVoice(currentChannel.id, currentGuildId)}
+              className="bg-accent hover:bg-accent-hover text-white font-semibold px-8 py-3 rounded-lg transition-colors"
+            >
+              Join Voice
+            </button>
+          </div>
+        ) : hasContent ? (
           <>
             <div className="h-12 px-4 flex items-center gap-2 border-b border-divider shrink-0 shadow-sm">
               {isGuildMode ? (

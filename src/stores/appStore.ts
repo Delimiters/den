@@ -49,6 +49,13 @@ interface AppStore {
   addReaction: (reaction: MessageReaction) => void;
   removeReaction: (messageId: string, userId: string, emoji: string) => void;
   clearReactions: () => void;
+
+  // Voice
+  voiceChannelId: string | null;
+  voiceToken: string | null;
+  voiceLivekitUrl: string | null;
+  setVoiceChannel: (channelId: string, token: string, url: string) => void;
+  clearVoiceChannel: () => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -135,4 +142,12 @@ export const useAppStore = create<AppStore>((set) => ({
       },
     })),
   clearReactions: () => set({ reactions: {} }),
+
+  voiceChannelId: null,
+  voiceToken: null,
+  voiceLivekitUrl: null,
+  setVoiceChannel: (channelId, token, url) =>
+    set({ voiceChannelId: channelId, voiceToken: token, voiceLivekitUrl: url }),
+  clearVoiceChannel: () =>
+    set({ voiceChannelId: null, voiceToken: null, voiceLivekitUrl: null }),
 }));

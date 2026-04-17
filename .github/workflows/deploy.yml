@@ -31,9 +31,8 @@ jobs:
       # (Settings → Secrets → Actions → New repository secret)
       - name: Deploy Edge Functions
         run: |
-          supabase functions deploy upload-url \
-            --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} \
-            --no-verify-jwt
+          supabase functions deploy upload-url --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy livekit-token --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 

@@ -235,7 +235,7 @@ export function Message({
     return (
       <div className="group relative flex items-start gap-4 px-4 py-0.5 hover:bg-msg-hover">
         {actions}
-        <span className="text-text-muted text-xs w-14 mt-0.5 text-right shrink-0 opacity-0 group-hover:opacity-100 transition-opacity leading-relaxed">
+        <span className="text-text-muted text-xs w-10 mt-0.5 text-right shrink-0 opacity-0 group-hover:opacity-100 transition-opacity leading-relaxed">
           {formatTimestamp(message.created_at, true)}
         </span>
         <div className="min-w-0 flex-1">{contentBlock}</div>
