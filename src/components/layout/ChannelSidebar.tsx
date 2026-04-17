@@ -11,6 +11,7 @@ interface ChannelSidebarProps {
   currentChannelId: string | null;
   currentUser: User;
   unread: Record<string, true>;
+  canManageChannels?: boolean;
   onChannelSelect: (channelId: string) => void;
   onChannelsRefresh: () => void;
   onSignOut: () => void;
@@ -23,6 +24,7 @@ export function ChannelSidebar({
   currentChannelId,
   currentUser,
   unread,
+  canManageChannels = false,
   onChannelSelect,
   onChannelsRefresh,
   onSignOut,
@@ -76,7 +78,7 @@ export function ChannelSidebar({
           <>
             <ChannelSection
               label="Text Channels"
-              onAdd={() => setShowAddChannel(true)}
+              onAdd={canManageChannels ? () => setShowAddChannel(true) : undefined}
             >
               {textChannels.map((ch) => (
                 <ChannelRow

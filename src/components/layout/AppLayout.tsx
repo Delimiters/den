@@ -8,6 +8,7 @@ import { useReactions } from "../../hooks/useReactions";
 import { useUnreadTracker } from "../../hooks/useUnreadTracker";
 import { useTyping } from "../../hooks/useTyping";
 import { useRoles } from "../../hooks/useRoles";
+import { hasPermission, Permissions } from "../../utils/permissions";
 import { GuildSidebar } from "./GuildSidebar";
 import { ChannelSidebar } from "./ChannelSidebar";
 import { DmSidebar } from "./DmSidebar";
@@ -43,7 +44,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     viewMode === "dm" ? currentDmId : null
   );
   const currentGuild = guilds.find((g) => g.id === currentGuildId);
-  const { roles, createRole, updateRole, deleteRole } = useRoles(
+  const { roles, myPermissions, getUserRoles, assignRole, revokeRole, createRole, updateRole, deleteRole } = useRoles(
     currentGuildId,
     currentUser.id,
     currentGuild?.owner_id ?? null
@@ -145,6 +146,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           currentChannelId={currentChannelId}
           currentUser={currentUser}
           unread={unread}
+          canManageChannels={hasPermission(myPermissions, Permissions.MANAGE_CHANNELS)}
           onChannelSelect={(id) => setCurrentChannel(id)}
           onChannelsRefresh={() => currentGuildId && loadChannels(currentGuildId)}
           onSignOut={onSignOut}
@@ -207,7 +209,12 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
         <MemberList
           guildId={currentGuildId}
           currentUserId={currentUser.id}
+          roles={roles}
+          canManageRoles={hasPermission(myPermissions, Permissions.MANAGE_ROLES)}
+          getUserRoles={getUserRoles}
           onOpenDm={handleOpenDm}
+          onAssignRole={assignRole}
+          onRevokeRole={revokeRole}
         />
       )}
 
