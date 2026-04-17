@@ -7,31 +7,47 @@ export type UploadResult =
   | { ok: true; attachment: Omit<Attachment, "id" | "message_id"> }
   | { ok: false; error: string };
 
-/**
- * Upload a file to storage.
- * Currently uses Supabase Storage — swap this function body to use R2 when ready.
- * Returns the public URL and file metadata.
- */
-export async function uploadFile(file: File, userId: string): Promise<UploadResult> {
+export async function uploadFile(file: File, _userId: string): Promise<UploadResult> {
   if (file.size > MAX_FILE_SIZE) {
     return { ok: false, error: `File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)` };
   }
 
-  const ext = file.name.split(".").pop() ?? "bin";
-  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  // Get a pre-signed R2 upload URL from the Edge Function
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return { ok: false, error: "Not authenticated" };
 
-  const { error } = await supabase.storage
-    .from("attachments")
-    .upload(path, file, { contentType: file.type, upsert: false });
+  const res = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-url`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        fileName: file.name,
+        contentType: file.type || "application/octet-stream",
+      }),
+    }
+  );
 
-  if (error) return { ok: false, error: error.message };
+  if (!res.ok) return { ok: false, error: "Failed to get upload URL" };
 
-  const { data: urlData } = supabase.storage.from("attachments").getPublicUrl(path);
+  const { uploadUrl, publicUrl } = await res.json();
+
+  // PUT file directly to R2 — no proxy overhead
+  const uploadRes = await fetch(uploadUrl, {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": file.type || "application/octet-stream" },
+  });
+
+  if (!uploadRes.ok) return { ok: false, error: "Upload to storage failed" };
 
   return {
     ok: true,
     attachment: {
-      file_url: urlData.publicUrl,
+      file_url: publicUrl,
       file_name: file.name,
       file_size: file.size,
       content_type: file.type || "application/octet-stream",
