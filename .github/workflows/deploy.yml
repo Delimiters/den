@@ -1,0 +1,48 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:once
+      - run: npm run build
+
+  deploy-functions:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Requires SUPABASE_ACCESS_TOKEN secret in GitHub repo settings
+      # (Settings → Secrets → Actions → New repository secret)
+      - name: Deploy Edge Functions
+        run: |
+          supabase functions deploy upload-url \
+            --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} \
+            --no-verify-jwt
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  # TODO: deploy-web (when web hosting is set up)
+  # - Build the Vite app
+  # - Deploy to Cloudflare Pages or similar
+  # - Requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY secrets
+
+  # TODO: tauri-build (when desktop releases are needed)
+  # - Build Tauri app for Windows/Mac/Linux
+  # - Upload artifacts to GitHub Releases
+  # - Uses tauri-action: https://github.com/tauri-apps/tauri-action
