@@ -223,12 +223,12 @@ function ChannelRow({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-1.5 px-2 py-2 rounded text-sm transition-colors group ${
+      className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-sm transition-colors group ${
         active
-          ? "bg-msg-hover text-text-primary"
+          ? "bg-white/[0.12] text-text-primary"
           : unread
-          ? "text-text-primary hover:bg-msg-hover"
-          : "text-text-muted hover:bg-msg-hover hover:text-text-secondary"
+          ? "text-text-primary hover:bg-white/[0.06]"
+          : "text-text-muted hover:bg-white/[0.06] hover:text-text-secondary"
       }`}
     >
       <span className="text-text-muted text-base leading-none">{icon}</span>

@@ -6,8 +6,14 @@ interface AvatarProps {
 }
 
 const COLORS = [
-  "#5865f2", "#57f287", "#fee75c", "#eb459e",
-  "#ed4245", "#3ba55c", "#faa61a", "#9146ff",
+  "#5865f2", // blurple
+  "#3ba55c", // forest green
+  "#e67e22", // warm orange
+  "#9b59b6", // soft purple
+  "#e74c3c", // muted red
+  "#1abc9c", // teal
+  "#3498db", // sky blue
+  "#f39c12", // amber
 ];
 
 function colorFromName(name: string): string {

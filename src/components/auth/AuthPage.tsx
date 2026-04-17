@@ -32,8 +32,8 @@ export function AuthPage() {
         </h1>
         <p className="text-text-muted text-sm text-center mb-6">
           {mode === "login"
-            ? "We're so excited to see you again!"
-            : "Welcome to Den."}
+            ? "Sign in to continue to Den."
+            : "Join your friends on Den."}
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -91,7 +91,7 @@ export function AuthPage() {
             className="bg-accent hover:bg-accent-hover text-white font-semibold py-2 rounded transition-colors disabled:opacity-60 mt-1"
           >
             {loading
-              ? "..."
+              ? (mode === "login" ? "Signing in…" : "Creating account…")
               : mode === "login"
               ? "Log In"
               : "Continue"}

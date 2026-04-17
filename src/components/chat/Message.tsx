@@ -157,23 +157,38 @@ export function Message({
   );
 
   const actions = !isEditing ? (
-    <div className="absolute right-4 -top-4 hidden group-hover:flex items-center bg-overlay border border-divider rounded shadow-lg z-10">
+    <div className="absolute right-4 -top-5 hidden group-hover:flex items-center bg-overlay border border-divider rounded-lg shadow-xl z-10 overflow-visible">
+      {/* Quick reaction emojis shown directly */}
+      {onReact && QUICK_EMOJIS.slice(0, 3).map((emoji) => (
+        <button
+          key={emoji}
+          onClick={() => onReact(message.id, emoji)}
+          className="w-9 h-9 flex items-center justify-center hover:bg-msg-hover text-xl transition-colors first:rounded-l-lg"
+          title={`React with ${emoji}`}
+        >
+          {emoji}
+        </button>
+      ))}
+
+      {/* More reactions picker */}
       {onReact && (
         <div className="relative" ref={pickerRef}>
           <button
             onClick={() => setShowPicker((p) => !p)}
-            className="px-2 py-1 text-text-muted hover:text-text-primary hover:bg-msg-hover text-xs transition-colors"
+            className="w-9 h-9 flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-msg-hover transition-colors"
             title="Add reaction"
           >
-            😄
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 13.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm5 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm2.5-6H14V7.5h-1.5V9.5h-2V7.5H9V9.5H6.5v1.5H9v2h1.5v-2h2v2H14v-2h2.5V9.5z"/>
+            </svg>
           </button>
           {showPicker && (
-            <div className="absolute right-0 top-full mt-1 bg-overlay border border-divider rounded shadow-xl p-2 flex gap-1 z-20">
-              {QUICK_EMOJIS.map((emoji) => (
+            <div className="absolute right-0 top-full mt-1 bg-overlay border border-divider rounded-lg shadow-xl p-2 flex gap-1 z-20">
+              {QUICK_EMOJIS.slice(3).map((emoji) => (
                 <button
                   key={emoji}
                   onClick={() => { onReact(message.id, emoji); setShowPicker(false); }}
-                  className="w-8 h-8 flex items-center justify-center rounded hover:bg-msg-hover text-lg transition-colors"
+                  className="w-9 h-9 flex items-center justify-center rounded hover:bg-msg-hover text-xl transition-colors"
                 >
                   {emoji}
                 </button>
@@ -182,22 +197,35 @@ export function Message({
           )}
         </div>
       )}
+
+      {/* Divider before message actions */}
+      {(isOwn && (onEdit || onDelete)) && (
+        <div className="w-px h-5 bg-divider mx-0.5" />
+      )}
+
+      {/* Edit */}
       {isOwn && onEdit && (
         <button
           onClick={startEdit}
-          className="px-2 py-1 text-text-muted hover:text-text-primary hover:bg-msg-hover text-xs transition-colors"
+          className="w-9 h-9 flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-msg-hover transition-colors"
           title="Edit message"
         >
-          ✏️
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+          </svg>
         </button>
       )}
+
+      {/* Delete */}
       {isOwn && onDelete && (
         <button
           onClick={() => onDelete(message.id)}
-          className="px-2 py-1 text-text-muted hover:text-danger hover:bg-msg-hover text-xs rounded-r transition-colors"
+          className="w-9 h-9 flex items-center justify-center text-text-muted hover:text-danger hover:bg-msg-hover transition-colors last:rounded-r-lg"
           title="Delete message"
         >
-          🗑️
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+          </svg>
         </button>
       )}
     </div>
