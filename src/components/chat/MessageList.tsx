@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { Message } from "./Message";
 import { useAppStore } from "../../stores/appStore";
 import { supabase } from "../../lib/supabase";
@@ -28,6 +28,7 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
   const prevLength = useRef(0);
   const loadingOlder = useRef(false);
   const hasMore = useRef(true);
+  const [showJumpToBottom, setShowJumpToBottom] = useState(false);
 
   // Reset pagination state when channel changes
   useEffect(() => {
@@ -45,10 +46,13 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
     prevLength.current = messages.length;
   }, [messages.length]);
 
-  // Load older messages when user scrolls to top
+  // Load older messages when user scrolls to top; track whether we're scrolled up
   const handleScroll = useCallback(async () => {
     const el = scrollRef.current;
-    if (!el || !channelId || loadingOlder.current || !hasMore.current) return;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setShowJumpToBottom(distFromBottom > 300);
+    if (!channelId || loadingOlder.current || !hasMore.current) return;
     if (el.scrollTop > 100) return;
 
     loadingOlder.current = true;
@@ -114,6 +118,18 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
   const ordered = [...messages].reverse();
 
   return (
+    <div className="flex-1 flex flex-col min-h-0 relative">
+    {showJumpToBottom && (
+      <button
+        onClick={() => bottomRef.current?.scrollIntoView({ behavior: "smooth" })}
+        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-overlay border border-divider text-text-secondary hover:text-text-primary text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 transition-colors"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8z"/>
+        </svg>
+        Jump to bottom
+      </button>
+    )}
     <div ref={scrollRef} className="flex-1 flex flex-col overflow-y-auto" onScroll={handleScroll}>
       <div className="px-4 pt-10 pb-4">
         <div className="w-16 h-16 rounded-full bg-sidebar flex items-center justify-center text-3xl mb-4">
@@ -180,6 +196,7 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
       )}
 
       <div ref={bottomRef} />
+    </div>
     </div>
   );
 }
