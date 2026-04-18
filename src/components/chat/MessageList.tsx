@@ -3,7 +3,7 @@ import { Message } from "./Message";
 import { useAppStore } from "../../stores/appStore";
 import { supabase } from "../../lib/supabase";
 import type { Message as MessageType } from "../../types";
-import { shouldCompact } from "../../utils/message";
+import { shouldCompact, formatDateLabel, isDifferentDay } from "../../utils/message";
 
 const PAGE_SIZE = 50;
 
@@ -28,19 +28,23 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
   const prevLength = useRef(0);
   const loadingOlder = useRef(false);
   const hasMore = useRef(true);
+  const isNearBottom = useRef(true);
   const [showJumpToBottom, setShowJumpToBottom] = useState(false);
 
   // Reset pagination state when channel changes
   useEffect(() => {
     hasMore.current = true;
     loadingOlder.current = false;
+    isNearBottom.current = true;
+    prevLength.current = 0;
   }, [channelId]);
 
-  // Scroll to bottom on new incoming messages; instant jump on initial load
+  // Scroll to bottom on initial load; only auto-scroll on new messages when near bottom
   useEffect(() => {
     if (prevLength.current === 0 && messages.length > 0) {
       bottomRef.current?.scrollIntoView();
-    } else if (messages.length > prevLength.current) {
+      isNearBottom.current = true;
+    } else if (messages.length > prevLength.current && isNearBottom.current) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
     prevLength.current = messages.length;
@@ -51,6 +55,7 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
     const el = scrollRef.current;
     if (!el) return;
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottom.current = distFromBottom < 100;
     setShowJumpToBottom(distFromBottom > 300);
     if (!channelId || loadingOlder.current || !hasMore.current) return;
     if (el.scrollTop > 100) return;
@@ -160,17 +165,27 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
 
       <div className="flex flex-col pb-4">
         {ordered.map((msg, i) => (
-          <Message
-            key={msg.id}
-            message={msg}
-            compact={shouldCompact(msg, ordered[i - 1])}
-            currentUserId={currentUserId}
-            reactions={reactions[msg.id]}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onReact={onReact}
-            onOpenDm={onOpenDm}
-          />
+          <div key={msg.id}>
+            {isDifferentDay(msg, ordered[i - 1]) && (
+              <div className="flex items-center gap-3 px-4 my-3">
+                <div className="flex-1 h-px bg-divider" />
+                <span className="text-text-muted text-xs font-medium shrink-0">
+                  {formatDateLabel(msg.created_at)}
+                </span>
+                <div className="flex-1 h-px bg-divider" />
+              </div>
+            )}
+            <Message
+              message={msg}
+              compact={shouldCompact(msg, ordered[i - 1]) && !isDifferentDay(msg, ordered[i - 1])}
+              currentUserId={currentUserId}
+              reactions={reactions[msg.id]}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onReact={onReact}
+              onOpenDm={onOpenDm}
+            />
+          </div>
         ))}
       </div>
 
