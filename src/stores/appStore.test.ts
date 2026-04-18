@@ -136,6 +136,24 @@ describe("message mutations", () => {
   });
 });
 
+describe("voice state", () => {
+  it("setVoiceChannel stores all three fields", () => {
+    useAppStore.getState().setVoiceChannel("ch-1", "jwt-token", "wss://lk.cloud");
+    const { voiceChannelId, voiceToken, voiceLivekitUrl } = useAppStore.getState();
+    expect(voiceChannelId).toBe("ch-1");
+    expect(voiceToken).toBe("jwt-token");
+    expect(voiceLivekitUrl).toBe("wss://lk.cloud");
+  });
+
+  it("clearVoiceChannel nulls all voice fields", () => {
+    useAppStore.setState({ voiceChannelId: "ch-1", voiceToken: "t", voiceLivekitUrl: "wss://x" });
+    useAppStore.getState().clearVoiceChannel();
+    expect(useAppStore.getState().voiceChannelId).toBeNull();
+    expect(useAppStore.getState().voiceToken).toBeNull();
+    expect(useAppStore.getState().voiceLivekitUrl).toBeNull();
+  });
+});
+
 describe("reactions", () => {
   it("addReaction inserts a new reaction", () => {
     useAppStore.getState().addReaction({ message_id: "msg-1", user_id: "user-1", emoji: "👍" });
