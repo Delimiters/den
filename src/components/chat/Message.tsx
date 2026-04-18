@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import { Avatar } from "../ui/Avatar";
 import { UserPopover } from "../ui/UserPopover";
+import { ImageLightbox } from "../ui/ImageLightbox";
 import type { Message as MessageType, MessageReaction } from "../../types";
 import { formatTimestamp } from "../../utils/message";
 import { MessageContent } from "../../utils/markdown";
@@ -33,6 +34,7 @@ export function Message({
   const [editContent, setEditContent] = useState(message.content);
   const [showPicker, setShowPicker] = useState(false);
   const [popoverAnchor, setPopoverAnchor] = useState<DOMRect | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<{ src: string; alt: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
@@ -123,7 +125,8 @@ export function Message({
                 key={att.id}
                 src={att.file_url}
                 alt={att.file_name}
-                className="rounded max-h-80 max-w-full object-contain cursor-pointer"
+                className="rounded max-h-80 max-w-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => setLightboxSrc({ src: att.file_url, alt: att.file_name })}
               />
             ) : isVideo(att.content_type) ? (
               <video
@@ -261,6 +264,9 @@ export function Message({
 
   return (
     <div className="group relative flex items-start gap-4 px-4 py-2 hover:bg-msg-hover mt-1">
+      {lightboxSrc && (
+        <ImageLightbox src={lightboxSrc.src} alt={lightboxSrc.alt} onClose={() => setLightboxSrc(null)} />
+      )}
       {actions}
       <Avatar
         src={author?.avatar_url}
