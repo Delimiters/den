@@ -141,6 +141,23 @@ export function MessageContent({ content, className = "" }: MessageContentProps)
       continue;
     }
 
+    // Ordered list (1. 2. 3.)
+    if (/^\d+\. /.test(lines[i])) {
+      const listItems: string[] = [];
+      while (i < lines.length && /^\d+\. /.test(lines[i])) {
+        listItems.push(lines[i].replace(/^\d+\. /, ""));
+        i++;
+      }
+      elements.push(
+        <ol key={i} className="list-decimal list-inside my-0.5 space-y-0.5 text-text-secondary">
+          {listItems.map((item, j) => (
+            <li key={j}>{renderSegments(parseInline(item), `oli-${i}-${j}`)}</li>
+          ))}
+        </ol>
+      );
+      continue;
+    }
+
     // Unordered list (- item or * item)
     if (/^[-*] /.test(lines[i])) {
       const listItems: string[] = [];

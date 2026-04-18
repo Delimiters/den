@@ -41,8 +41,10 @@ export function ChannelSidebar({
   const [showSettings, setShowSettings] = useState(false);
   const [voiceSessions, setVoiceSessions] = useState<VoiceSession[]>([]);
 
-  const textChannels = channels.filter((c) => c.type === "text");
-  const voiceChannels = channels.filter((c) => c.type === "voice");
+  const categories = channels.filter((c) => c.type === "category").sort((a, b) => a.position - b.position);
+  const hasCategories = categories.length > 0;
+  const textChannels = channels.filter((c) => c.type === "text" && !hasCategories);
+  const voiceChannels = channels.filter((c) => c.type === "voice" && !hasCategories);
 
   // Load + subscribe to voice sessions for the current guild
   useEffect(() => {
@@ -107,48 +109,89 @@ export function ChannelSidebar({
       <div className="flex-1 overflow-y-auto px-2 py-3">
         {guild && (
           <>
-            <ChannelSection
-              label="Text Channels"
-              onAdd={canManageChannels ? () => setShowAddChannel("text") : undefined}
-            >
-              {textChannels.map((ch) => (
-                <ChannelRow
-                  key={ch.id}
-                  channel={ch}
-                  active={ch.id === currentChannelId}
-                  unread={!!unread[ch.id]}
-                  onClick={() => onChannelSelect(ch.id)}
-                />
-              ))}
-            </ChannelSection>
+            {hasCategories ? (
+              // Render channels grouped under their parent category
+              categories.map((cat) => {
+                const catChannels = channels
+                  .filter((c) => c.parent_id === cat.id && c.type !== "category")
+                  .sort((a, b) => a.position - b.position);
+                return (
+                  <ChannelSection
+                    key={cat.id}
+                    label={cat.name}
+                    onAdd={canManageChannels ? () => setShowAddChannel("text") : undefined}
+                  >
+                    {catChannels.map((ch) => {
+                      const participants = voiceSessions.filter((s) => s.channel_id === ch.id);
+                      return (
+                        <div key={ch.id}>
+                          <ChannelRow
+                            channel={ch}
+                            active={ch.id === currentChannelId}
+                            unread={!!unread[ch.id]}
+                            participantCount={ch.type === "voice" ? participants.length : 0}
+                            onClick={() => onChannelSelect(ch.id)}
+                          />
+                          {ch.type === "voice" && participants.map((s) => {
+                            const name = (s.user as any)?.display_name || (s.user as any)?.username || "Unknown";
+                            return (
+                              <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-0.5">
+                                <Avatar src={(s.user as any)?.avatar_url ?? null} name={name} size={14} />
+                                <span className="text-text-muted text-xs truncate">{name}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </ChannelSection>
+                );
+              })
+            ) : (
+              <>
+                <ChannelSection
+                  label="Text Channels"
+                  onAdd={canManageChannels ? () => setShowAddChannel("text") : undefined}
+                >
+                  {textChannels.map((ch) => (
+                    <ChannelRow
+                      key={ch.id}
+                      channel={ch}
+                      active={ch.id === currentChannelId}
+                      unread={!!unread[ch.id]}
+                      onClick={() => onChannelSelect(ch.id)}
+                    />
+                  ))}
+                </ChannelSection>
 
-            {voiceChannels.length > 0 && (
-              <ChannelSection label="Voice Channels" onAdd={canManageChannels ? () => setShowAddChannel("voice") : undefined}>
-                {voiceChannels.map((ch) => {
-                  const participants = voiceSessions.filter((s) => s.channel_id === ch.id);
-                  return (
-                    <div key={ch.id}>
-                      <ChannelRow
-                        channel={ch}
-                        active={ch.id === currentChannelId}
-                        unread={false}
-                        participantCount={participants.length}
-                        onClick={() => onChannelSelect(ch.id)}
-                      />
-                      {/* Show participant names below the voice channel row */}
-                      {participants.map((s) => {
-                        const name = (s.user as any)?.display_name || (s.user as any)?.username || "Unknown";
-                        return (
-                          <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-0.5">
-                            <Avatar src={(s.user as any)?.avatar_url ?? null} name={name} size={14} />
-                            <span className="text-text-muted text-xs truncate">{name}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </ChannelSection>
+                {voiceChannels.length > 0 && (
+                  <ChannelSection label="Voice Channels" onAdd={canManageChannels ? () => setShowAddChannel("voice") : undefined}>
+                    {voiceChannels.map((ch) => {
+                      const participants = voiceSessions.filter((s) => s.channel_id === ch.id);
+                      return (
+                        <div key={ch.id}>
+                          <ChannelRow
+                            channel={ch}
+                            active={ch.id === currentChannelId}
+                            unread={false}
+                            participantCount={participants.length}
+                            onClick={() => onChannelSelect(ch.id)}
+                          />
+                          {participants.map((s) => {
+                            const name = (s.user as any)?.display_name || (s.user as any)?.username || "Unknown";
+                            return (
+                              <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-0.5">
+                                <Avatar src={(s.user as any)?.avatar_url ?? null} name={name} size={14} />
+                                <span className="text-text-muted text-xs truncate">{name}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </ChannelSection>
+                )}
+              </>
             )}
           </>
         )}

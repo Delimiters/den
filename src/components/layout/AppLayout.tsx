@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAppStore } from "../../stores/appStore";
 import { useRealtimeMessages } from "../../hooks/useRealtimeMessages";
@@ -19,6 +19,8 @@ import { MessageList } from "../chat/MessageList";
 import { MessageInput } from "../chat/MessageInput";
 import { ServerSettingsModal } from "./ServerSettingsModal";
 import { MessageSearch } from "../chat/MessageSearch";
+import { ToastContainer } from "../ui/Toast";
+import { useToasts } from "../../hooks/useToasts";
 import type { User, Guild, Channel } from "../../types";
 
 // Lazy-load LiveKit — ~500KB chunk only loaded when entering a voice channel
@@ -34,6 +36,7 @@ interface AppLayoutProps {
 export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const [showServerSettings, setShowServerSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const { toasts, addToast, dismiss } = useToasts();
 
   const {
     viewMode, setCurrentGuild, setCurrentDm,
@@ -64,11 +67,34 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
   usePresence(currentUser);
   useUnreadTracker(currentGuildId);
-  useDmUnreadTracker(dmChannels);
+  useDmUnreadTracker(dmChannels, currentUser.id, (payload) => addToast(payload));
+
+  // Toast on @mention in guild channels
+  const messages = useAppStore((s) => s.messages);
+  const latestMsgId = useRef<string | null>(null);
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const newest = messages[0]; // newest-first
+    if (!newest || newest.id === latestMsgId.current) return;
+    latestMsgId.current = newest.id;
+    // Only notify if authored by someone else and contains @username
+    if (
+      newest.author_id !== currentUser.id &&
+      newest.content.includes(`@${currentUser.username}`)
+    ) {
+      const author = newest.author;
+      addToast({
+        type: "mention",
+        senderName: author?.display_name || author?.username || "Someone",
+        senderAvatar: author?.avatar_url ?? null,
+        preview: newest.content,
+        onClick: () => {},
+      });
+    }
+  }, [messages[0]?.id]);
   const activeChannelId = viewMode === "guild" ? currentChannelId : currentDmId;
   const { sendTyping } = useTyping(activeChannelId, currentUser.username);
 
-  const messages = useAppStore((s) => s.messages);
   const messageIds = messages.map((m) => m.id);
   const { toggleReaction } = useReactions(
     viewMode === "guild" ? currentChannelId : null,
@@ -310,6 +336,8 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           onClose={() => setShowServerSettings(false)}
         />
       )}
+
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   );
 }
