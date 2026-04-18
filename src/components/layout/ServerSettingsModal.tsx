@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useRef, type ChangeEvent } from "react";
+import { supabase } from "../../lib/supabase";
+import { useAppStore } from "../../stores/appStore";
 import { Permissions, PERMISSION_LABELS, hasPermission } from "../../utils/permissions";
+import { Avatar } from "../ui/Avatar";
 import type { Guild, Role } from "../../types";
 
-type Tab = "roles";
+type Tab = "overview" | "roles";
 
 interface ServerSettingsModalProps {
   guild: Guild;
@@ -23,7 +26,21 @@ export function ServerSettingsModal({
   guild, currentUserId, roles,
   onCreateRole, onUpdateRole, onDeleteRole, onClose,
 }: ServerSettingsModalProps) {
-  const [tab] = useState<Tab>("roles");
+  const setGuilds = useAppStore((s) => s.setGuilds);
+  const guilds = useAppStore((s) => s.guilds);
+
+  const [tab, setTab] = useState<Tab>("overview");
+
+  // Overview state
+  const [guildName, setGuildName] = useState(guild.name);
+  const [iconPreview, setIconPreview] = useState<string | null>(guild.icon_url);
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewError, setOverviewError] = useState<string | null>(null);
+  const [overviewSaved, setOverviewSaved] = useState(false);
+  const iconFileRef = useRef<HTMLInputElement>(null);
+
+  // Roles state
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(roles[0]?.id ?? null);
   const [editName, setEditName] = useState("");
   const [editColor, setEditColor] = useState("");
@@ -32,6 +49,58 @@ export function ServerSettingsModal({
   const [saving, setSaving] = useState(false);
 
   const isOwner = guild.owner_id === currentUserId;
+
+  function handleIconChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) { setOverviewError("Icon must be under 4MB"); return; }
+    setIconFile(file);
+    setIconPreview(URL.createObjectURL(file));
+    setOverviewError(null);
+  }
+
+  async function handleOverviewSave() {
+    if (!isOwner) return;
+    setOverviewLoading(true);
+    setOverviewError(null);
+
+    let iconUrl = guild.icon_url;
+
+    if (iconFile) {
+      const ext = iconFile.name.split(".").pop();
+      const path = `guild-icons/${guild.id}/icon.${ext}`;
+      const { error: uploadErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, iconFile, { upsert: true });
+      if (uploadErr) {
+        setOverviewError("Icon upload failed. Make sure the avatars storage bucket exists.");
+        setOverviewLoading(false);
+        return;
+      }
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      iconUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+    }
+
+    const trimmedName = guildName.trim();
+    if (!trimmedName) { setOverviewError("Server name cannot be empty."); setOverviewLoading(false); return; }
+
+    const { error: updateErr } = await supabase
+      .from("guilds")
+      .update({ name: trimmedName, icon_url: iconUrl })
+      .eq("id", guild.id);
+
+    if (updateErr) {
+      setOverviewError("Failed to save. Please try again.");
+      setOverviewLoading(false);
+      return;
+    }
+
+    // Update local store so name/icon refresh without re-fetching
+    setGuilds(guilds.map((g) => g.id === guild.id ? { ...g, name: trimmedName, icon_url: iconUrl } : g));
+    setOverviewLoading(false);
+    setOverviewSaved(true);
+    setTimeout(() => setOverviewSaved(false), 2000);
+  }
 
   function selectRole(role: Role) {
     setSelectedRoleId(role.id);
@@ -73,16 +142,20 @@ export function ServerSettingsModal({
       <div className="bg-overlay rounded-lg w-full max-w-2xl h-[560px] shadow-2xl flex overflow-hidden">
         {/* Left nav */}
         <div className="w-48 bg-guild-rail flex flex-col py-4 shrink-0">
-          <p className="text-text-muted text-xs font-semibold uppercase tracking-wide px-4 mb-2">
+          <p className="text-text-muted text-xs font-semibold uppercase tracking-wide px-4 mb-2 truncate">
             {guild.name}
           </p>
-          <button
-            className={`px-4 py-1.5 text-sm text-left transition-colors rounded mx-2 ${
-              tab === "roles" ? "bg-white/10 text-text-primary" : "text-text-secondary hover:text-text-primary hover:bg-white/5"
-            }`}
-          >
-            Roles
-          </button>
+          {(["overview", "roles"] as Tab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-4 py-1.5 text-sm text-left transition-colors rounded mx-2 capitalize ${
+                tab === t ? "bg-white/10 text-text-primary" : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
           <div className="flex-1" />
           <button
             onClick={onClose}
@@ -92,7 +165,75 @@ export function ServerSettingsModal({
           </button>
         </div>
 
+        {/* Overview panel */}
+        {tab === "overview" && (
+          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+            <h2 className="text-text-primary font-bold text-lg">Server Overview</h2>
+
+            {/* Icon upload */}
+            <div className="flex items-center gap-5">
+              <div
+                className="relative cursor-pointer group"
+                onClick={() => isOwner && iconFileRef.current?.click()}
+              >
+                <Avatar src={iconPreview} name={guild.name} size={80} className="rounded-2xl" />
+                {isOwner && (
+                  <div className="absolute inset-0 rounded-2xl bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-white text-xs font-semibold text-center leading-tight px-1">Change Icon</span>
+                  </div>
+                )}
+              </div>
+              <input ref={iconFileRef} type="file" accept="image/*" className="hidden" onChange={handleIconChange} />
+              <div className="flex flex-col gap-1">
+                <p className="text-text-secondary text-sm font-medium">Server Icon</p>
+                <p className="text-text-muted text-xs">Recommended: 256×256 px, under 4 MB</p>
+                {isOwner && (
+                  <button
+                    onClick={() => iconFileRef.current?.click()}
+                    className="text-accent hover:text-accent text-xs font-semibold mt-1 w-fit"
+                  >
+                    Upload Image
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Guild name */}
+            <div className="flex flex-col gap-1">
+              <label className="text-text-secondary text-xs font-semibold uppercase tracking-wide">
+                Server Name
+              </label>
+              <input
+                value={guildName}
+                onChange={(e) => setGuildName(e.target.value)}
+                disabled={!isOwner}
+                maxLength={100}
+                className="bg-input-bg text-text-primary rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
+              />
+            </div>
+
+            {overviewError && <p className="text-danger text-xs">{overviewError}</p>}
+
+            {isOwner && (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleOverviewSave}
+                  disabled={overviewLoading || !guildName.trim()}
+                  className="bg-accent hover:bg-accent-hover text-white text-sm font-semibold px-5 py-2 rounded transition-colors disabled:opacity-50"
+                >
+                  {overviewLoading ? "Saving…" : overviewSaved ? "Saved!" : "Save Changes"}
+                </button>
+              </div>
+            )}
+
+            {!isOwner && (
+              <p className="text-text-muted text-sm">Only the server owner can edit these settings.</p>
+            )}
+          </div>
+        )}
+
         {/* Roles panel */}
+        {tab === "roles" && (
         <div className="flex-1 flex overflow-hidden">
           {/* Role list */}
           <div className="w-48 border-r border-divider flex flex-col">
@@ -230,6 +371,7 @@ export function ServerSettingsModal({
             )}
           </div>
         </div>
+        )}
       </div>
     </div>
   );
