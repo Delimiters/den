@@ -190,6 +190,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           currentUser={currentUser}
           unread={unread}
           onDmSelect={(id) => setCurrentDm(id)}
+          onOpenDm={handleOpenDm}
           onSignOut={onSignOut}
         />
       )}

@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { supabase } from "../../lib/supabase";
 import { Avatar } from "../ui/Avatar";
 import { StatusIndicator } from "../ui/StatusIndicator";
 import type { DmChannel, User } from "../../types";
@@ -8,16 +10,36 @@ interface DmSidebarProps {
   currentUser: User;
   unread: Record<string, true>;
   onDmSelect: (dmId: string) => void;
+  onOpenDm: (userId: string) => void;
   onSignOut: () => void;
 }
 
-export function DmSidebar({ dmChannels, currentDmId, currentUser, unread, onDmSelect, onSignOut }: DmSidebarProps) {
+export function DmSidebar({ dmChannels, currentDmId, currentUser, unread, onDmSelect, onOpenDm, onSignOut }: DmSidebarProps) {
+  const [showNewDm, setShowNewDm] = useState(false);
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
       {/* Header */}
-      <div className="h-12 px-4 flex items-center border-b border-divider shadow-sm shrink-0">
+      <div className="h-12 px-4 flex items-center justify-between border-b border-divider shadow-sm shrink-0">
         <h2 className="text-text-primary font-semibold text-sm">Direct Messages</h2>
+        <button
+          onClick={() => setShowNewDm(true)}
+          title="New message"
+          className="text-text-muted hover:text-text-primary transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 3H5a2 2 0 00-2 2v14l4-4h12a2 2 0 002-2V5a2 2 0 00-2-2zm-7 12H8v-2h4v2zm4-4H8v-2h8v2zm0-4H8V5h8v2z"/>
+            <path d="M20 2v4h4" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </button>
       </div>
+
+      {showNewDm && (
+        <NewDmModal
+          currentUserId={currentUser.id}
+          onSelect={(userId) => { onOpenDm(userId); setShowNewDm(false); }}
+          onClose={() => setShowNewDm(false)}
+        />
+      )}
 
       {/* DM list */}
       <div className="flex-1 overflow-y-auto px-2 py-3">
@@ -84,6 +106,72 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, unread, onDmSe
             <path d="M20 3h-9c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H9v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
           </svg>
         </button>
+      </div>
+    </div>
+  );
+}
+
+function NewDmModal({ currentUserId, onSelect, onClose }: {
+  currentUserId: string;
+  onSelect: (userId: string) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<User[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  async function search(q: string) {
+    setQuery(q);
+    if (!q.trim() || q.trim().length < 2) { setResults([]); return; }
+    setSearching(true);
+    const { data } = await supabase
+      .from("users")
+      .select("*")
+      .ilike("username", `%${q.trim()}%`)
+      .neq("id", currentUserId)
+      .limit(10);
+    setResults((data ?? []) as User[]);
+    setSearching(false);
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-overlay rounded-lg w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="p-4 border-b border-divider flex items-center justify-between">
+          <h2 className="text-text-primary font-semibold text-base">New Message</h2>
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl leading-none">✕</button>
+        </div>
+        <div className="p-4">
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => search(e.target.value)}
+            placeholder="Search by username…"
+            className="w-full bg-input-bg text-text-primary rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent"
+          />
+        </div>
+        <div className="max-h-64 overflow-y-auto pb-2">
+          {searching && <p className="text-text-muted text-sm text-center py-4">Searching…</p>}
+          {!searching && query.trim().length >= 2 && results.length === 0 && (
+            <p className="text-text-muted text-sm text-center py-4">No users found</p>
+          )}
+          {results.map((u) => {
+            const name = u.display_name || u.username;
+            return (
+              <button
+                key={u.id}
+                onClick={() => onSelect(u.id)}
+                className="w-full flex items-center gap-3 px-4 py-2 hover:bg-white/[0.06] transition-colors"
+              >
+                <Avatar src={u.avatar_url} name={name} size={32} />
+                <div className="text-left">
+                  <p className="text-text-primary text-sm font-medium">{name}</p>
+                  {u.display_name && <p className="text-text-muted text-xs">@{u.username}</p>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
