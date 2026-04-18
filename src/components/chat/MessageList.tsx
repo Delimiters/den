@@ -16,9 +16,10 @@ interface MessageListProps {
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
   onReact?: (messageId: string, emoji: string) => void;
+  onOpenDm?: (userId: string) => void;
 }
 
-export function MessageList({ channelName, channelId, isDm = false, currentUserId, typingUsers = [], onEdit, onDelete, onReact }: MessageListProps) {
+export function MessageList({ channelName, channelId, isDm = false, currentUserId, typingUsers = [], onEdit, onDelete, onReact, onOpenDm }: MessageListProps) {
   const messages = useAppStore((s) => s.messages);
   const reactions = useAppStore((s) => s.reactions);
   const prependMessages = useAppStore((s) => s.prependMessages);
@@ -152,6 +153,7 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
             onEdit={onEdit}
             onDelete={onDelete}
             onReact={onReact}
+            onOpenDm={onOpenDm}
           />
         ))}
       </div>

@@ -3,6 +3,7 @@ interface AvatarProps {
   name: string;
   size?: number;
   className?: string;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 const COLORS = [
@@ -22,7 +23,7 @@ function colorFromName(name: string): string {
   return COLORS[Math.abs(hash) % COLORS.length];
 }
 
-export function Avatar({ src, name, size = 32, className = "" }: AvatarProps) {
+export function Avatar({ src, name, size = 32, className = "", onClick }: AvatarProps) {
   const initials = name
     .split(/\s+/)
     .slice(0, 2)
@@ -35,6 +36,7 @@ export function Avatar({ src, name, size = 32, className = "" }: AvatarProps) {
       <img
         src={src}
         alt={name}
+        onClick={onClick}
         className={`rounded-full object-cover shrink-0 ${className}`}
         style={{ width: size, height: size }}
       />
@@ -43,6 +45,7 @@ export function Avatar({ src, name, size = 32, className = "" }: AvatarProps) {
 
   return (
     <div
+      onClick={onClick}
       className={`rounded-full flex items-center justify-center shrink-0 font-semibold text-white ${className}`}
       style={{
         width: size,

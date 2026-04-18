@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import { Avatar } from "../ui/Avatar";
+import { UserPopover } from "../ui/UserPopover";
 import type { Message as MessageType, MessageReaction } from "../../types";
 import { formatTimestamp } from "../../utils/message";
 import { MessageContent } from "../../utils/markdown";
-import { isImage, formatFileSize } from "../../utils/upload";
+import { isImage, isVideo, formatFileSize } from "../../utils/upload";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉", "🔥", "😡"];
 
@@ -15,6 +16,7 @@ interface MessageProps {
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
   onReact?: (messageId: string, emoji: string) => void;
+  onOpenDm?: (userId: string) => void;
 }
 
 export function Message({
@@ -25,12 +27,19 @@ export function Message({
   onEdit,
   onDelete,
   onReact,
+  onOpenDm,
 }: MessageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [showPicker, setShowPicker] = useState(false);
+  const [popoverAnchor, setPopoverAnchor] = useState<DOMRect | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+
+  function openProfile(e: React.MouseEvent) {
+    e.stopPropagation();
+    setPopoverAnchor(e.currentTarget.getBoundingClientRect());
+  }
 
   const author = message.author;
   const displayName = author?.display_name || author?.username || "Unknown";
@@ -115,6 +124,13 @@ export function Message({
                 src={att.file_url}
                 alt={att.file_name}
                 className="rounded max-h-80 max-w-full object-contain cursor-pointer"
+              />
+            ) : isVideo(att.content_type) ? (
+              <video
+                key={att.id}
+                src={att.file_url}
+                controls
+                className="rounded max-h-80 max-w-full"
               />
             ) : (
               <a
@@ -251,10 +267,22 @@ export function Message({
         name={displayName}
         size={40}
         className="mt-0.5 cursor-pointer shrink-0"
+        onClick={openProfile}
       />
+      {popoverAnchor && author && (
+        <UserPopover
+          user={author}
+          anchorRect={popoverAnchor}
+          onClose={() => setPopoverAnchor(null)}
+          onOpenDm={onOpenDm && author.id !== currentUserId ? () => onOpenDm(author.id) : undefined}
+        />
+      )}
       <div className="flex flex-col min-w-0 flex-1">
         <div className="flex items-baseline gap-2 mb-0.5">
-          <span className="text-text-primary text-sm font-semibold cursor-pointer hover:underline">
+          <span
+            onClick={openProfile}
+            className="text-text-primary text-sm font-semibold cursor-pointer hover:underline"
+          >
             {displayName}
           </span>
           <span className="text-text-muted text-xs">

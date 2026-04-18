@@ -263,6 +263,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               onEdit={editFn}
               onDelete={deleteFn}
               onReact={isGuildMode ? (msgId, emoji) => toggleReaction(msgId, emoji, currentUser.id) : undefined}
+              onOpenDm={handleOpenDm}
             />
             <MessageInput channelName={channelName} onSend={sendFn} onTyping={sendTyping} />
           </>
