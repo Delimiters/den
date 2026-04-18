@@ -6,11 +6,12 @@ interface DmSidebarProps {
   dmChannels: DmChannel[];
   currentDmId: string | null;
   currentUser: User;
+  unread: Record<string, true>;
   onDmSelect: (dmId: string) => void;
   onSignOut: () => void;
 }
 
-export function DmSidebar({ dmChannels, currentDmId, currentUser, onDmSelect, onSignOut }: DmSidebarProps) {
+export function DmSidebar({ dmChannels, currentDmId, currentUser, unread, onDmSelect, onSignOut }: DmSidebarProps) {
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
       {/* Header */}
@@ -27,6 +28,7 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, onDmSelect, on
             const other = dm.participants[0];
             if (!other) return null;
             const name = other.display_name || other.username;
+            const hasUnread = !!unread[dm.id];
             return (
               <button
                 key={dm.id}
@@ -43,7 +45,19 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, onDmSelect, on
                     <StatusIndicator status={other.status ?? "offline"} size={10} />
                   </span>
                 </div>
-                <span className="text-sm truncate">{name}</span>
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className={`text-sm truncate ${hasUnread ? "text-text-primary font-semibold" : ""}`}>{name}</span>
+                    {hasUnread && (
+                      <span className="w-2 h-2 bg-white rounded-full shrink-0" />
+                    )}
+                  </div>
+                  {dm.lastMessage && (
+                    <p className="text-xs truncate text-text-muted mt-0.5">
+                      {dm.lastMessage.content || "📎 Attachment"}
+                    </p>
+                  )}
+                </div>
               </button>
             );
           })

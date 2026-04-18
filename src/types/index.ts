@@ -89,6 +89,7 @@ export interface DmChannel {
   id: string;
   created_at: string;
   participants: User[];
+  lastMessage?: { content: string; created_at: string; author_username: string } | null;
 }
 
 export interface DmAttachment {

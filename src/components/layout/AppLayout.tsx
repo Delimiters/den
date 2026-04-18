@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { useAppStore } from "../../stores/appStore";
 import { useRealtimeMessages } from "../../hooks/useRealtimeMessages";
 import { useDirectMessages, loadDmChannels, openDm } from "../../hooks/useDirectMessages";
+import { useDmUnreadTracker } from "../../hooks/useDmUnreadTracker";
 import { usePresence } from "../../hooks/usePresence";
 import { useReactions } from "../../hooks/useReactions";
 import { useUnreadTracker } from "../../hooks/useUnreadTracker";
@@ -63,6 +64,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
   usePresence(currentUser);
   useUnreadTracker(currentGuildId);
+  useDmUnreadTracker(dmChannels);
   const activeChannelId = viewMode === "guild" ? currentChannelId : currentDmId;
   const { sendTyping } = useTyping(activeChannelId, currentUser.username);
 
@@ -186,6 +188,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           dmChannels={dmChannels}
           currentDmId={currentDmId}
           currentUser={currentUser}
+          unread={unread}
           onDmSelect={(id) => setCurrentDm(id)}
           onSignOut={onSignOut}
         />

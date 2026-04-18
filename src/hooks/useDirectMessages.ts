@@ -162,11 +162,38 @@ export async function loadDmChannels(userId: string): Promise<DmChannel[]> {
     if (p.user) participantsByChannel[p.dm_channel_id].push(p.user as User);
   }
 
+  // Fetch the most recent message for each channel for preview
+  const { data: lastMessages } = await supabase
+    .from("dm_messages")
+    .select("dm_channel_id, content, created_at, author:users!author_id(username)")
+    .in("dm_channel_id", channelIds)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  const lastByChannel: Record<string, { content: string; created_at: string; author_username: string }> = {};
+  if (lastMessages) {
+    for (const msg of lastMessages as any[]) {
+      if (!lastByChannel[msg.dm_channel_id]) {
+        lastByChannel[msg.dm_channel_id] = {
+          content: msg.content,
+          created_at: msg.created_at,
+          author_username: msg.author?.username ?? "",
+        };
+      }
+    }
+  }
+
   return data.map((r: any) => ({
     id: r.dm_channel_id,
     created_at: r.dm_channel?.created_at ?? "",
     participants: participantsByChannel[r.dm_channel_id] ?? [],
-  })).filter((d) => d.participants.length > 0);
+    lastMessage: lastByChannel[r.dm_channel_id] ?? null,
+  })).filter((d) => d.participants.length > 0)
+    .sort((a, b) => {
+      const aTime = a.lastMessage?.created_at ?? a.created_at;
+      const bTime = b.lastMessage?.created_at ?? b.created_at;
+      return bTime.localeCompare(aTime);
+    });
 }
 
 /** Get or create a DM channel with another user */
