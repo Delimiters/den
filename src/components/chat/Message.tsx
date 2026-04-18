@@ -114,7 +114,7 @@ export function Message({
                 key={att.id}
                 src={att.file_url}
                 alt={att.file_name}
-                className="rounded max-h-80 object-contain cursor-pointer"
+                className="rounded max-h-80 max-w-full object-contain cursor-pointer"
               />
             ) : (
               <a
