@@ -39,6 +39,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const [showServerSettings, setShowServerSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<import("../../types").Message | null>(null);
   const { toasts, addToast, dismiss } = useToasts();
 
   const {
@@ -139,6 +140,8 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   useEffect(() => {
     if (viewMode === "guild" && currentGuildId) loadChannels(currentGuildId);
   }, [currentGuildId, viewMode]);
+  // Clear reply context on channel/DM switch
+  useEffect(() => { setReplyingTo(null); }, [currentChannelId, currentDmId]);
 
   async function loadGuilds() {
     const { data } = await supabase
@@ -189,8 +192,8 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
   const isGuildMode = viewMode === "guild";
   const sendFn = isGuildMode
-    ? (content: string, files?: File[]) => sendMessage(content, currentUser.id, files)
-    : (content: string, files?: File[]) => sendDm(content, currentUser.id, files);
+    ? (content: string, files?: File[], replyToId?: string | null) => sendMessage(content, currentUser.id, files, replyToId)
+    : (content: string, files?: File[], replyToId?: string | null) => sendDm(content, currentUser.id, files, replyToId);
   const editFn = isGuildMode ? editMessage : editDm;
   const deleteFn = isGuildMode ? deleteMessage : deleteDm;
 
@@ -313,9 +316,16 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               onEdit={editFn}
               onDelete={deleteFn}
               onReact={isGuildMode ? (msgId, emoji) => toggleReaction(msgId, emoji, currentUser.id) : undefined}
+              onReply={(msg) => setReplyingTo(msg)}
               onOpenDm={handleOpenDm}
             />
-            <MessageInput channelName={channelName} onSend={sendFn} onTyping={sendTyping} />
+            <MessageInput
+              channelName={channelName}
+              onSend={sendFn}
+              onTyping={sendTyping}
+              replyingTo={replyingTo}
+              onCancelReply={() => setReplyingTo(null)}
+            />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">

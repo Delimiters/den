@@ -4,6 +4,8 @@ import { useAppStore } from "../stores/appStore";
 import { uploadFile } from "../utils/upload";
 import type { Message, DmChannel, DmMessage, User } from "../types";
 
+const DM_SELECT = "*, author:users!author_id(*), dm_attachments(*), reply_to:dm_messages!reply_to_id(id, content, author:users!author_id(id, username, display_name))";
+
 /** Maps a dm_message row to the Message shape used by the store/UI */
 function dmToMessage(dm: DmMessage): Message {
   return {
@@ -14,6 +16,8 @@ function dmToMessage(dm: DmMessage): Message {
     created_at: dm.created_at,
     edited_at: dm.edited_at,
     deleted_at: dm.deleted_at,
+    reply_to_id: dm.reply_to_id,
+    reply_to: (dm as any).reply_to ?? null,
     author: dm.author,
     attachments: dm.dm_attachments?.map((a) => ({
       id: a.id,
@@ -36,7 +40,7 @@ export function useDirectMessages(dmId: string | null) {
 
     supabase
       .from("dm_messages")
-      .select("*, author:users!author_id(*), dm_attachments(*)")
+      .select(DM_SELECT)
       .eq("dm_channel_id", dmId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
@@ -61,7 +65,7 @@ export function useDirectMessages(dmId: string | null) {
       }, async (payload) => {
         const { data } = await supabase
           .from("dm_messages")
-          .select("*, author:users!author_id(*), dm_attachments(*)")
+          .select(DM_SELECT)
           .eq("id", payload.new.id)
           .single();
         if (data) appendMessage(dmToMessage(data as DmMessage));
@@ -84,12 +88,12 @@ export function useDirectMessages(dmId: string | null) {
     return () => { subRef.current?.unsubscribe(); };
   }, [dmId]);
 
-  async function sendDm(content: string, authorId: string, files?: File[]) {
+  async function sendDm(content: string, authorId: string, files?: File[], replyToId?: string | null) {
     if (!dmId || (!content.trim() && (!files || files.length === 0))) return;
 
     const { data: msg } = await supabase
       .from("dm_messages")
-      .insert({ dm_channel_id: dmId, author_id: authorId, content: content.trim() })
+      .insert({ dm_channel_id: dmId, author_id: authorId, content: content.trim(), reply_to_id: replyToId ?? null })
       .select("id")
       .single();
 
@@ -109,7 +113,7 @@ export function useDirectMessages(dmId: string | null) {
       // Re-fetch to get attachments on the message in the store
       const { data: updated } = await supabase
         .from("dm_messages")
-        .select("*, author:users!author_id(*), dm_attachments(*)")
+        .select(DM_SELECT)
         .eq("id", msg.id)
         .single();
       if (updated) updateMessage(msg.id, { attachments: dmToMessage(updated as DmMessage).attachments });

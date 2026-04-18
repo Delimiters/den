@@ -28,6 +28,12 @@ export interface Channel {
   parent_id: string | null;
 }
 
+export interface ReplyRef {
+  id: string;
+  content: string;
+  author?: Pick<User, "id" | "username" | "display_name">;
+}
+
 export interface Message {
   id: string;
   channel_id: string;
@@ -36,6 +42,8 @@ export interface Message {
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
+  reply_to_id?: string | null;
+  reply_to?: ReplyRef | null;
   author?: User;
   attachments?: Attachment[];
 }
@@ -109,6 +117,7 @@ export interface DmMessage {
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
+  reply_to_id?: string | null;
   author?: User;
   dm_attachments?: DmAttachment[];
 }

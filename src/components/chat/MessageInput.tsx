@@ -1,5 +1,6 @@
 import { useState, useRef, type KeyboardEvent, type DragEvent } from "react";
 import { formatFileSize, isImage } from "../../utils/upload";
+import type { Message } from "../../types";
 
 interface PendingFile {
   file: File;
@@ -8,11 +9,13 @@ interface PendingFile {
 
 interface MessageInputProps {
   channelName: string;
-  onSend: (content: string, files?: File[]) => void;
+  onSend: (content: string, files?: File[], replyToId?: string | null) => void;
   onTyping?: () => void;
+  replyingTo?: Message | null;
+  onCancelReply?: () => void;
 }
 
-export function MessageInput({ channelName, onSend, onTyping }: MessageInputProps) {
+export function MessageInput({ channelName, onSend, onTyping, replyingTo, onCancelReply }: MessageInputProps) {
   const [content, setContent] = useState("");
   const [pending, setPending] = useState<PendingFile[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -46,7 +49,8 @@ export function MessageInput({ channelName, onSend, onTyping }: MessageInputProp
   function submit() {
     const trimmed = content.trim();
     if (!trimmed && pending.length === 0) return;
-    onSend(trimmed, pending.map((p) => p.file));
+    onSend(trimmed, pending.map((p) => p.file), replyingTo?.id ?? null);
+    onCancelReply?.();
     setContent("");
     pending.forEach((p) => { if (p.preview) URL.revokeObjectURL(p.preview); });
     setPending([]);
@@ -67,6 +71,30 @@ export function MessageInput({ channelName, onSend, onTyping }: MessageInputProp
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
     >
+      {/* Reply context bar */}
+      {replyingTo && (
+        <div className="flex items-center gap-2 bg-input-bg rounded-t-lg px-4 py-2 border-b border-divider/50 -mb-1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted shrink-0">
+            <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" />
+          </svg>
+          <span className="text-text-muted text-xs">
+            Replying to{" "}
+            <span className="text-text-primary font-medium">
+              {replyingTo.author?.display_name || replyingTo.author?.username || "Unknown"}
+            </span>
+          </span>
+          <span className="text-text-muted text-xs truncate flex-1 italic">
+            {replyingTo.content.slice(0, 80)}{replyingTo.content.length > 80 ? "…" : ""}
+          </span>
+          <button
+            onClick={onCancelReply}
+            className="text-text-muted hover:text-text-primary shrink-0 text-sm leading-none"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* File previews */}
       {pending.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2">

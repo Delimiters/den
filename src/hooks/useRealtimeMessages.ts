@@ -4,7 +4,7 @@ import { useAppStore } from "../stores/appStore";
 import { uploadFile } from "../utils/upload";
 import type { Message } from "../types";
 
-const MSG_SELECT = "*, author:users!author_id(*), attachments(*)";
+const MSG_SELECT = "*, author:users!author_id(*), attachments(*), reply_to:messages!reply_to_id(id, content, author:users!author_id(id, username, display_name))";
 
 export function useRealtimeMessages(channelId: string | null) {
   const { setMessages, appendMessage, updateMessage, removeMessage } = useAppStore();
@@ -81,12 +81,12 @@ export function useRealtimeMessages(channelId: string | null) {
     };
   }, [channelId]);
 
-  async function sendMessage(content: string, authorId: string, files?: File[]) {
+  async function sendMessage(content: string, authorId: string, files?: File[], replyToId?: string | null) {
     if (!channelId || (!content.trim() && !files?.length)) return;
 
     const { data: msg } = await supabase
       .from("messages")
-      .insert({ channel_id: channelId, author_id: authorId, content: content.trim() })
+      .insert({ channel_id: channelId, author_id: authorId, content: content.trim(), reply_to_id: replyToId ?? null })
       .select()
       .single();
 

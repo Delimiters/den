@@ -22,7 +22,7 @@ describe("MessageInput", () => {
     await user.type(textarea, "hey there");
     await user.keyboard("{Enter}");
     expect(onSend).toHaveBeenCalledOnce();
-    expect(onSend).toHaveBeenCalledWith("hey there", []);
+    expect(onSend).toHaveBeenCalledWith("hey there", [], null);
   });
 
   it("clears the textarea after sending", async () => {
@@ -54,7 +54,7 @@ describe("MessageInput", () => {
     await user.click(textarea);
     await user.type(textarea, "  hello  ");
     await user.keyboard("{Enter}");
-    expect(onSend).toHaveBeenCalledWith("hello", []);
+    expect(onSend).toHaveBeenCalledWith("hello", [], null);
   });
 
   it("calls onSend when the send button is clicked", async () => {
@@ -63,7 +63,7 @@ describe("MessageInput", () => {
     await user.type(textarea, "click test");
     const sendBtn = screen.getByTitle("Send message");
     await user.click(sendBtn);
-    expect(onSend).toHaveBeenCalledWith("click test", []);
+    expect(onSend).toHaveBeenCalledWith("click test", [], null);
   });
 
   it("send button is disabled when textarea is empty", () => {

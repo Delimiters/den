@@ -18,6 +18,7 @@ interface MessageProps {
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
   onReact?: (messageId: string, emoji: string) => void;
+  onReply?: (message: MessageType) => void;
   onOpenDm?: (userId: string) => void;
 }
 
@@ -29,6 +30,7 @@ export function Message({
   onEdit,
   onDelete,
   onReact,
+  onReply,
   onOpenDm,
 }: MessageProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -96,6 +98,20 @@ export function Message({
     },
     {}
   );
+
+  const replyBlock = message.reply_to ? (
+    <div className="flex items-center gap-2 mb-1 text-xs text-text-muted">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="shrink-0 opacity-60">
+        <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" />
+      </svg>
+      <span className="font-medium text-text-secondary">
+        {message.reply_to.author?.display_name || message.reply_to.author?.username || "Unknown"}
+      </span>
+      <span className="truncate max-w-xs opacity-80">
+        {message.reply_to.content.slice(0, 100)}{message.reply_to.content.length > 100 ? "…" : ""}
+      </span>
+    </div>
+  ) : null;
 
   const contentBlock = isEditing ? (
     <div className="flex flex-col gap-1">
@@ -210,6 +226,19 @@ export function Message({
         </div>
       )}
 
+      {/* Reply */}
+      {onReply && (
+        <button
+          onClick={() => onReply(message)}
+          className="w-9 h-9 flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-msg-hover transition-colors"
+          title="Reply"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" />
+          </svg>
+        </button>
+      )}
+
       {/* Divider before message actions */}
       {(isOwn && (onEdit || onDelete)) && (
         <div className="w-px h-5 bg-divider mx-0.5" />
@@ -250,7 +279,7 @@ export function Message({
         <span className="text-text-muted text-xs w-10 mt-0.5 text-right shrink-0 opacity-0 group-hover:opacity-100 transition-opacity leading-relaxed">
           {formatTimestamp(message.created_at, true)}
         </span>
-        <div className="min-w-0 flex-1">{contentBlock}</div>
+        <div className="min-w-0 flex-1">{replyBlock}{contentBlock}</div>
       </div>
     );
   }
@@ -277,6 +306,7 @@ export function Message({
         />
       )}
       <div className="flex flex-col min-w-0 flex-1">
+        {replyBlock}
         <div className="flex items-baseline gap-2 mb-0.5">
           <span
             onClick={openProfile}
