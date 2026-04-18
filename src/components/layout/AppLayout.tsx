@@ -21,6 +21,8 @@ import { ServerSettingsModal } from "./ServerSettingsModal";
 import { MessageSearch } from "../chat/MessageSearch";
 import { ToastContainer } from "../ui/Toast";
 import { useToasts } from "../../hooks/useToasts";
+import { requestNotificationPermission, notify } from "../../utils/desktopNotification";
+import { QuickSwitcher } from "../ui/QuickSwitcher";
 import type { User, Guild, Channel } from "../../types";
 
 // Lazy-load LiveKit — ~500KB chunk only loaded when entering a voice channel
@@ -36,6 +38,7 @@ interface AppLayoutProps {
 export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const [showServerSettings, setShowServerSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
   const { toasts, addToast, dismiss } = useToasts();
 
   const {
@@ -67,9 +70,15 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
   usePresence(currentUser);
   useUnreadTracker(currentGuildId);
-  useDmUnreadTracker(dmChannels, currentUser.id, (payload) => addToast(payload));
+  useDmUnreadTracker(dmChannels, currentUser.id, (payload) => {
+    addToast(payload);
+    notify(payload.senderName, payload.preview, payload.senderAvatar);
+  });
 
-  // Toast on @mention in guild channels
+  // Request notification permission once on mount
+  useEffect(() => { requestNotificationPermission(); }, []);
+
+  // Toast + desktop notification on @mention in guild channels
   const messages = useAppStore((s) => s.messages);
   const latestMsgId = useRef<string | null>(null);
   useEffect(() => {
@@ -83,13 +92,15 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
       newest.content.includes(`@${currentUser.username}`)
     ) {
       const author = newest.author;
+      const senderName = author?.display_name || author?.username || "Someone";
       addToast({
         type: "mention",
-        senderName: author?.display_name || author?.username || "Someone",
+        senderName,
         senderAvatar: author?.avatar_url ?? null,
         preview: newest.content,
         onClick: () => {},
       });
+      notify(`${senderName} mentioned you`, newest.content, author?.avatar_url ?? null);
     }
   }, [messages[0]?.id]);
   const activeChannelId = viewMode === "guild" ? currentChannelId : currentDmId;
@@ -105,7 +116,10 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     function handleKeyDown(e: KeyboardEvent) {
       const { currentChannelId: chId, currentDmId: dmId, viewMode: vm } = useAppStore.getState();
       const active = vm === "guild" ? !!chId : !!dmId;
-      if ((e.ctrlKey || e.metaKey) && e.key === "f" && active) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setShowQuickSwitcher((s) => !s);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "f" && active) {
         e.preventDefault();
         setShowSearch((s) => !s);
       }
@@ -338,6 +352,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
       )}
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
+      {showQuickSwitcher && <QuickSwitcher onClose={() => setShowQuickSwitcher(false)} />}
     </div>
   );
 }
