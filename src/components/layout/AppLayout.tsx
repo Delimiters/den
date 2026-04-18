@@ -17,6 +17,7 @@ import { MemberList } from "./MemberList";
 import { MessageList } from "../chat/MessageList";
 import { MessageInput } from "../chat/MessageInput";
 import { ServerSettingsModal } from "./ServerSettingsModal";
+import { MessageSearch } from "../chat/MessageSearch";
 import type { User, Guild, Channel } from "../../types";
 
 // Lazy-load LiveKit — ~500KB chunk only loaded when entering a voice channel
@@ -31,6 +32,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const [showServerSettings, setShowServerSettings] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   const {
     viewMode, setCurrentGuild, setCurrentDm,
@@ -70,6 +72,19 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     viewMode === "guild" ? currentChannelId : null,
     messageIds
   );
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const { currentChannelId: chId, currentDmId: dmId, viewMode: vm } = useAppStore.getState();
+      const active = vm === "guild" ? !!chId : !!dmId;
+      if ((e.ctrlKey || e.metaKey) && e.key === "f" && active) {
+        e.preventDefault();
+        setShowSearch((s) => !s);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => { loadGuilds(); loadDms(); }, [currentUser.id]);
   // Re-load channels when switching to guild mode OR when currentGuildId changes
@@ -172,7 +187,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
       )}
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative">
         {/* Voice channel view — replaces chat area when a voice channel is selected */}
         {isGuildMode && currentChannel?.type === "voice" && voiceChannelId === currentChannel.id && voiceToken && voiceLivekitUrl ? (
           <Suspense fallback={<div className="flex-1 flex items-center justify-center"><p className="text-text-muted">Connecting…</p></div>}>
@@ -215,11 +230,29 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
                   <h3 className="text-text-primary font-semibold text-sm">{channelName}</h3>
                 </>
               )}
+              <div className="flex-1" />
+              <button
+                onClick={() => setShowSearch(true)}
+                className="text-text-muted hover:text-text-primary transition-colors p-1.5 rounded hover:bg-msg-hover"
+                title="Search messages (Ctrl+F)"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+              </button>
             </div>
+            {showSearch && channelId && (
+              <MessageSearch
+                channelId={channelId}
+                isDm={!isGuildMode}
+                onClose={() => setShowSearch(false)}
+              />
+            )}
 
             <MessageList
               channelName={channelName}
               channelId={channelId}
+              isDm={!isGuildMode}
               currentUserId={currentUser.id}
               typingUsers={typing[activeChannelId ?? ""] ?? []}
               onEdit={editFn}

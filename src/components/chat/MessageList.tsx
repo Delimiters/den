@@ -10,6 +10,7 @@ const PAGE_SIZE = 50;
 interface MessageListProps {
   channelName: string;
   channelId?: string;
+  isDm?: boolean;
   currentUserId?: string;
   typingUsers?: string[];
   onEdit?: (messageId: string, content: string) => void;
@@ -17,7 +18,7 @@ interface MessageListProps {
   onReact?: (messageId: string, emoji: string) => void;
 }
 
-export function MessageList({ channelName, channelId, currentUserId, typingUsers = [], onEdit, onDelete, onReact }: MessageListProps) {
+export function MessageList({ channelName, channelId, isDm = false, currentUserId, typingUsers = [], onEdit, onDelete, onReact }: MessageListProps) {
   const messages = useAppStore((s) => s.messages);
   const reactions = useAppStore((s) => s.reactions);
   const prependMessages = useAppStore((s) => s.prependMessages);
@@ -53,18 +54,52 @@ export function MessageList({ channelName, channelId, currentUserId, typingUsers
     const oldest = messages[messages.length - 1]; // store is newest-first, so last = oldest
     if (!oldest) { loadingOlder.current = false; return; }
 
-    const { data } = await supabase
-      .from("messages")
-      .select("*, author:users!author_id(*), attachments(*)")
-      .eq("channel_id", channelId)
-      .is("deleted_at", null)
-      .lt("created_at", oldest.created_at)
-      .order("created_at", { ascending: false })
-      .limit(PAGE_SIZE);
+    let data: MessageType[] | null = null;
+
+    if (isDm) {
+      const { data: rows } = await supabase
+        .from("dm_messages")
+        .select("*, author:users!author_id(*), dm_attachments(*)")
+        .eq("dm_channel_id", channelId)
+        .is("deleted_at", null)
+        .lt("created_at", oldest.created_at)
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
+      data = rows
+        ? rows.map((dm: any) => ({
+            id: dm.id,
+            channel_id: dm.dm_channel_id,
+            author_id: dm.author_id,
+            content: dm.content,
+            created_at: dm.created_at,
+            edited_at: dm.edited_at,
+            deleted_at: dm.deleted_at,
+            author: dm.author,
+            attachments: dm.dm_attachments?.map((a: any) => ({
+              id: a.id,
+              message_id: a.dm_message_id,
+              file_url: a.file_url,
+              file_name: a.file_name,
+              file_size: a.file_size,
+              content_type: a.content_type,
+            })),
+          }))
+        : null;
+    } else {
+      const { data: rows } = await supabase
+        .from("messages")
+        .select("*, author:users!author_id(*), attachments(*)")
+        .eq("channel_id", channelId)
+        .is("deleted_at", null)
+        .lt("created_at", oldest.created_at)
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
+      data = rows as MessageType[] | null;
+    }
 
     if (data && data.length > 0) {
       const prevScrollHeight = el.scrollHeight;
-      prependMessages(data as MessageType[]);
+      prependMessages(data);
       requestAnimationFrame(() => {
         el.scrollTop += el.scrollHeight - prevScrollHeight;
       });
@@ -73,7 +108,7 @@ export function MessageList({ channelName, channelId, currentUserId, typingUsers
       hasMore.current = false;
     }
     loadingOlder.current = false;
-  }, [channelId, messages]);
+  }, [channelId, isDm, messages]);
 
   const ordered = [...messages].reverse();
 
@@ -81,14 +116,27 @@ export function MessageList({ channelName, channelId, currentUserId, typingUsers
     <div ref={scrollRef} className="flex-1 flex flex-col overflow-y-auto" onScroll={handleScroll}>
       <div className="px-4 pt-10 pb-4">
         <div className="w-16 h-16 rounded-full bg-sidebar flex items-center justify-center text-3xl mb-4">
-          #
+          {isDm ? "💬" : "#"}
         </div>
-        <h3 className="text-text-primary text-2xl font-bold">
-          Welcome to #{channelName}!
-        </h3>
-        <p className="text-text-muted text-sm mt-1">
-          This is the start of the #{channelName} channel.
-        </p>
+        {isDm ? (
+          <>
+            <h3 className="text-text-primary text-2xl font-bold">
+              {channelName}
+            </h3>
+            <p className="text-text-muted text-sm mt-1">
+              This is the beginning of your conversation with {channelName}.
+            </p>
+          </>
+        ) : (
+          <>
+            <h3 className="text-text-primary text-2xl font-bold">
+              Welcome to #{channelName}!
+            </h3>
+            <p className="text-text-muted text-sm mt-1">
+              This is the start of the #{channelName} channel.
+            </p>
+          </>
+        )}
       </div>
 
       <div className="border-t border-divider mx-4 mb-4" />
