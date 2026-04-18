@@ -78,6 +78,12 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   // Request notification permission once on mount
   useEffect(() => { requestNotificationPermission(); }, []);
 
+  // Update window title with unread count
+  const unreadCount = Object.keys(unread).length;
+  useEffect(() => {
+    document.title = unreadCount > 0 ? `(${unreadCount}) Den` : "Den";
+  }, [unreadCount]);
+
   // Toast + desktop notification on @mention in guild channels
   const messages = useAppStore((s) => s.messages);
   const latestMsgId = useRef<string | null>(null);

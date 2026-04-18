@@ -2,12 +2,13 @@ import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import { Avatar } from "../ui/Avatar";
 import { UserPopover } from "../ui/UserPopover";
 import { ImageLightbox } from "../ui/ImageLightbox";
+import { EmojiPicker } from "../ui/EmojiPicker";
 import type { Message as MessageType, MessageReaction } from "../../types";
 import { formatTimestamp } from "../../utils/message";
 import { MessageContent } from "../../utils/markdown";
 import { isImage, isVideo, formatFileSize } from "../../utils/upload";
 
-const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉", "🔥", "😡"];
+const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉"];
 
 interface MessageProps {
   message: MessageType;
@@ -178,7 +179,7 @@ export function Message({
   const actions = !isEditing ? (
     <div className="absolute right-4 -top-5 hidden group-hover:flex items-center bg-overlay border border-divider rounded-lg shadow-xl z-10 overflow-visible">
       {/* Quick reaction emojis shown directly */}
-      {onReact && QUICK_EMOJIS.slice(0, 3).map((emoji) => (
+      {onReact && QUICK_EMOJIS.map((emoji) => (
         <button
           key={emoji}
           onClick={() => onReact(message.id, emoji)}
@@ -189,7 +190,7 @@ export function Message({
         </button>
       ))}
 
-      {/* More reactions picker */}
+      {/* Full emoji picker */}
       {onReact && (
         <div className="relative" ref={pickerRef}>
           <button
@@ -202,16 +203,8 @@ export function Message({
             </svg>
           </button>
           {showPicker && (
-            <div className="absolute right-0 top-full mt-1 bg-overlay border border-divider rounded-lg shadow-xl p-2 flex gap-1 z-20">
-              {QUICK_EMOJIS.slice(3).map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => { onReact(message.id, emoji); setShowPicker(false); }}
-                  className="w-9 h-9 flex items-center justify-center rounded hover:bg-msg-hover text-xl transition-colors"
-                >
-                  {emoji}
-                </button>
-              ))}
+            <div className="absolute right-0 top-full mt-1 z-20">
+              <EmojiPicker onPick={(emoji) => { onReact(message.id, emoji); setShowPicker(false); }} />
             </div>
           )}
         </div>

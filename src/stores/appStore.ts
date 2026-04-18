@@ -80,7 +80,11 @@ export const useAppStore = create<AppStore>((set) => ({
       return { currentChannelId: channelId, messages: [], reactions: {}, unread };
     }),
   setCurrentDm: (dmId) =>
-    set({ viewMode: "dm", currentDmId: dmId, messages: [], reactions: {} }),
+    set((s) => {
+      const unread = { ...s.unread };
+      if (dmId) delete unread[dmId];
+      return { viewMode: "dm", currentDmId: dmId, messages: [], reactions: {}, unread };
+    }),
 
   guilds: [],
   channels: [],
