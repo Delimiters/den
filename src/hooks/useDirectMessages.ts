@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { useAppStore } from "../stores/appStore";
+import { uploadFile } from "../utils/upload";
 import type { Message, DmChannel, DmMessage, User } from "../types";
 
 /** Maps a dm_message row to the Message shape used by the store/UI */
@@ -14,6 +15,14 @@ function dmToMessage(dm: DmMessage): Message {
     edited_at: dm.edited_at,
     deleted_at: dm.deleted_at,
     author: dm.author,
+    attachments: dm.dm_attachments?.map((a) => ({
+      id: a.id,
+      message_id: a.dm_message_id,
+      file_url: a.file_url,
+      file_name: a.file_name,
+      file_size: a.file_size,
+      content_type: a.content_type,
+    })),
   };
 }
 
@@ -27,7 +36,7 @@ export function useDirectMessages(dmId: string | null) {
 
     supabase
       .from("dm_messages")
-      .select("*, author:users!author_id(*)")
+      .select("*, author:users!author_id(*), dm_attachments(*)")
       .eq("dm_channel_id", dmId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
@@ -52,7 +61,7 @@ export function useDirectMessages(dmId: string | null) {
       }, async (payload) => {
         const { data } = await supabase
           .from("dm_messages")
-          .select("*, author:users!author_id(*)")
+          .select("*, author:users!author_id(*), dm_attachments(*)")
           .eq("id", payload.new.id)
           .single();
         if (data) appendMessage(dmToMessage(data as DmMessage));
@@ -75,13 +84,36 @@ export function useDirectMessages(dmId: string | null) {
     return () => { subRef.current?.unsubscribe(); };
   }, [dmId]);
 
-  async function sendDm(content: string, authorId: string) {
-    if (!dmId || !content.trim()) return;
-    await supabase.from("dm_messages").insert({
-      dm_channel_id: dmId,
-      author_id: authorId,
-      content: content.trim(),
-    });
+  async function sendDm(content: string, authorId: string, files?: File[]) {
+    if (!dmId || (!content.trim() && (!files || files.length === 0))) return;
+
+    const { data: msg } = await supabase
+      .from("dm_messages")
+      .insert({ dm_channel_id: dmId, author_id: authorId, content: content.trim() })
+      .select("id")
+      .single();
+
+    if (msg && files && files.length > 0) {
+      const uploads = await Promise.all(files.map((f) => uploadFile(f, authorId)));
+      const rows = uploads
+        .filter((r): r is Extract<typeof r, { ok: true }> => r.ok)
+        .map((r) => ({
+          dm_message_id: msg.id,
+          file_url: r.attachment.file_url,
+          file_name: r.attachment.file_name,
+          file_size: r.attachment.file_size,
+          content_type: r.attachment.content_type,
+        }));
+      if (rows.length > 0) await supabase.from("dm_attachments").insert(rows);
+
+      // Re-fetch to get attachments on the message in the store
+      const { data: updated } = await supabase
+        .from("dm_messages")
+        .select("*, author:users!author_id(*), dm_attachments(*)")
+        .eq("id", msg.id)
+        .single();
+      if (updated) updateMessage(msg.id, { attachments: dmToMessage(updated as DmMessage).attachments });
+    }
   }
 
   async function editDm(messageId: string, content: string) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAppStore } from "../../stores/appStore";
 import { useRealtimeMessages } from "../../hooks/useRealtimeMessages";
@@ -17,8 +17,12 @@ import { MemberList } from "./MemberList";
 import { MessageList } from "../chat/MessageList";
 import { MessageInput } from "../chat/MessageInput";
 import { ServerSettingsModal } from "./ServerSettingsModal";
-import { VoiceChannelView } from "../voice/VoiceChannelView";
 import type { User, Guild, Channel } from "../../types";
+
+// Lazy-load LiveKit — ~500KB chunk only loaded when entering a voice channel
+const VoiceChannelView = lazy(() =>
+  import("../voice/VoiceChannelView").then((m) => ({ default: m.VoiceChannelView }))
+);
 
 interface AppLayoutProps {
   currentUser: User;
@@ -119,7 +123,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const isGuildMode = viewMode === "guild";
   const sendFn = isGuildMode
     ? (content: string, files?: File[]) => sendMessage(content, currentUser.id, files)
-    : (content: string) => sendDm(content, currentUser.id);
+    : (content: string, files?: File[]) => sendDm(content, currentUser.id, files);
   const editFn = isGuildMode ? editMessage : editDm;
   const deleteFn = isGuildMode ? deleteMessage : deleteDm;
 
@@ -171,13 +175,15 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Voice channel view — replaces chat area when a voice channel is selected */}
         {isGuildMode && currentChannel?.type === "voice" && voiceChannelId === currentChannel.id && voiceToken && voiceLivekitUrl ? (
-          <VoiceChannelView
-            token={voiceToken}
-            livekitUrl={voiceLivekitUrl}
-            channel={currentChannel}
-            currentUserId={currentUser.id}
-            onLeave={leaveVoice}
-          />
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center"><p className="text-text-muted">Connecting…</p></div>}>
+            <VoiceChannelView
+              token={voiceToken}
+              livekitUrl={voiceLivekitUrl}
+              channel={currentChannel}
+              currentUserId={currentUser.id}
+              onLeave={leaveVoice}
+            />
+          </Suspense>
         ) : isGuildMode && currentChannel?.type === "voice" ? (
           /* Voice channel join screen */
           <div className="flex-1 flex flex-col items-center justify-center gap-4">

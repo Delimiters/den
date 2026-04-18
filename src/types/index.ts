@@ -91,6 +91,15 @@ export interface DmChannel {
   participants: User[];
 }
 
+export interface DmAttachment {
+  id: string;
+  dm_message_id: string;
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  content_type: string;
+}
+
 export interface DmMessage {
   id: string;
   dm_channel_id: string;
@@ -100,4 +109,5 @@ export interface DmMessage {
   edited_at: string | null;
   deleted_at: string | null;
   author?: User;
+  dm_attachments?: DmAttachment[];
 }
