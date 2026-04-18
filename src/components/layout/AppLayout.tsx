@@ -131,6 +131,10 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     setCurrentDm(dmId);
   }
 
+  const unreadGuildIds = new Set(
+    channels.filter((c) => unread[c.id]).map((c) => c.guild_id)
+  );
+
   const currentChannel = channels.find((c) => c.id === currentChannelId);
   const currentDm = dmChannels.find((d) => d.id === currentDmId);
   const dmPartner = currentDm?.participants[0];
@@ -157,6 +161,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
         currentGuildId={currentGuildId}
         userId={currentUser.id}
         viewMode={viewMode}
+        unreadGuildIds={unreadGuildIds}
         onGuildSelect={(id) => setCurrentGuild(id)}
         onGuildsRefresh={loadGuilds}
         onOpenDms={() => setCurrentDm(dmChannels[0]?.id ?? null)}

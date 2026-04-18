@@ -8,6 +8,7 @@ interface GuildSidebarProps {
   currentGuildId: string | null;
   userId: string;
   viewMode: "guild" | "dm";
+  unreadGuildIds: Set<string>;
   onGuildSelect: (guildId: string) => void;
   onGuildsRefresh: () => void;
   onOpenDms: () => void;
@@ -18,6 +19,7 @@ export function GuildSidebar({
   currentGuildId,
   userId,
   viewMode,
+  unreadGuildIds,
   onGuildSelect,
   onGuildsRefresh,
   onOpenDms,
@@ -51,6 +53,7 @@ export function GuildSidebar({
             key={guild.id}
             guild={guild}
             active={guild.id === currentGuildId}
+            hasUnread={unreadGuildIds.has(guild.id)}
             onClick={() => onGuildSelect(guild.id)}
           />
         ))}
@@ -96,7 +99,7 @@ export function GuildSidebar({
   );
 }
 
-function GuildButton({ guild, active, onClick }: { guild: Guild; active: boolean; onClick: () => void }) {
+function GuildButton({ guild, active, hasUnread, onClick }: { guild: Guild; active: boolean; hasUnread: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -116,6 +119,10 @@ function GuildButton({ guild, active, onClick }: { guild: Guild; active: boolean
       >
         <Avatar src={guild.icon_url} name={guild.name} size={48} />
       </div>
+      {/* Unread badge */}
+      {hasUnread && !active && (
+        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-white rounded-full border-2 border-guild-rail" />
+      )}
     </button>
   );
 }
