@@ -1,5 +1,7 @@
 import { useState, useRef, type KeyboardEvent, type DragEvent } from "react";
 import { formatFileSize, isImage } from "../../utils/upload";
+import { useAppStore } from "../../stores/appStore";
+import { Avatar } from "../ui/Avatar";
 import type { Message } from "../../types";
 
 interface PendingFile {
@@ -15,11 +17,34 @@ interface MessageInputProps {
   onCancelReply?: () => void;
 }
 
+interface MentionState {
+  query: string;
+  startIndex: number;
+}
+
 export function MessageInput({ channelName, onSend, onTyping, replyingTo, onCancelReply }: MessageInputProps) {
   const [content, setContent] = useState("");
   const [pending, setPending] = useState<PendingFile[]>([]);
   const [dragging, setDragging] = useState(false);
+  const [mentionState, setMentionState] = useState<MentionState | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const members = useAppStore((s) => s.members);
+
+  const mentionCandidates = mentionState
+    ? members
+        .filter((m) => m.user)
+        .filter((m) => {
+          const q = mentionState.query.toLowerCase();
+          return (
+            m.user!.username.toLowerCase().includes(q) ||
+            (m.user!.display_name || "").toLowerCase().includes(q)
+          );
+        })
+        .slice(0, 8)
+    : [];
 
   function addFiles(files: FileList | File[]) {
     const arr = Array.from(files).slice(0, 10); // max 10 files
@@ -39,7 +64,60 @@ export function MessageInput({ channelName, onSend, onTyping, replyingTo, onCanc
     });
   }
 
+  function handleContentChange(value: string, cursorPos: number) {
+    setContent(value);
+    onTyping?.();
+
+    // Detect @mention: find last @ before cursor with only word chars after it
+    const textUpToCursor = value.slice(0, cursorPos);
+    const mentionMatch = textUpToCursor.match(/@(\w*)$/);
+    if (mentionMatch) {
+      setMentionState({ query: mentionMatch[1], startIndex: mentionMatch.index! });
+      setMentionIndex(0);
+    } else {
+      setMentionState(null);
+    }
+  }
+
+  function completeMention(username: string) {
+    if (!mentionState) return;
+    const before = content.slice(0, mentionState.startIndex);
+    const after = content.slice(mentionState.startIndex + 1 + mentionState.query.length);
+    const newContent = `${before}@${username} ${after}`;
+    setContent(newContent);
+    setMentionState(null);
+    // Restore focus and move cursor after the inserted mention
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      el.focus();
+      const pos = before.length + username.length + 2; // @username + space
+      el.setSelectionRange(pos, pos);
+    });
+  }
+
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (mentionState && mentionCandidates.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setMentionIndex((i) => (i + 1) % mentionCandidates.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setMentionIndex((i) => (i - 1 + mentionCandidates.length) % mentionCandidates.length);
+        return;
+      }
+      if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        completeMention(mentionCandidates[mentionIndex].user!.username);
+        return;
+      }
+      if (e.key === "Escape") {
+        setMentionState(null);
+        return;
+      }
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       submit();
@@ -52,6 +130,7 @@ export function MessageInput({ channelName, onSend, onTyping, replyingTo, onCanc
     onSend(trimmed, pending.map((p) => p.file), replyingTo?.id ?? null);
     onCancelReply?.();
     setContent("");
+    setMentionState(null);
     pending.forEach((p) => { if (p.preview) URL.revokeObjectURL(p.preview); });
     setPending([]);
   }
@@ -135,24 +214,43 @@ export function MessageInput({ channelName, onSend, onTyping, replyingTo, onCanc
         </button>
         <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && addFiles(e.target.files)} />
 
-        <textarea
-          value={content}
-          onChange={(e) => { setContent(e.target.value); onTyping?.(); }}
-          onKeyDown={handleKeyDown}
-          placeholder={`Message #${channelName}`}
-          rows={1}
-          className="flex-1 bg-transparent text-text-primary text-base outline-none resize-none leading-relaxed max-h-48 placeholder:text-text-muted"
-          style={{ lineHeight: "1.5rem" }}
-          onInput={(e) => {
-            const el = e.currentTarget;
-            el.style.height = "auto";
-            el.style.height = `${el.scrollHeight}px`;
-          }}
-          onPaste={(e) => {
-            const files = Array.from(e.clipboardData.files);
-            if (files.length > 0) { e.preventDefault(); addFiles(files); }
-          }}
-        />
+        <div className="flex-1 relative">
+          {mentionState && mentionCandidates.length > 0 && (
+            <div className="absolute bottom-full left-0 right-0 mb-1 bg-overlay border border-divider rounded-lg shadow-xl overflow-hidden z-20">
+              <p className="text-text-muted text-xs font-semibold px-3 pt-2 pb-1">Members</p>
+              {mentionCandidates.map((m, i) => (
+                <button
+                  key={m.user!.id}
+                  onMouseDown={(e) => { e.preventDefault(); completeMention(m.user!.username); }}
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${i === mentionIndex ? "bg-accent/20" : "hover:bg-msg-hover"}`}
+                >
+                  <Avatar src={m.user!.avatar_url} name={m.user!.display_name || m.user!.username} size={16} />
+                  <span className="text-text-primary text-sm font-medium">{m.user!.display_name || m.user!.username}</span>
+                  <span className="text-text-muted text-xs">@{m.user!.username}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <textarea
+            ref={textareaRef}
+            value={content}
+            onChange={(e) => handleContentChange(e.target.value, e.target.selectionStart)}
+            onKeyDown={handleKeyDown}
+            placeholder={`Message #${channelName}`}
+            rows={1}
+            className="w-full bg-transparent text-text-primary text-base outline-none resize-none leading-relaxed max-h-48 placeholder:text-text-muted"
+            style={{ lineHeight: "1.5rem" }}
+            onInput={(e) => {
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = `${el.scrollHeight}px`;
+            }}
+            onPaste={(e) => {
+              const files = Array.from(e.clipboardData.files);
+              if (files.length > 0) { e.preventDefault(); addFiles(files); }
+            }}
+          />
+        </div>
 
         <button
           onClick={submit}

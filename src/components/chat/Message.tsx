@@ -14,6 +14,7 @@ interface MessageProps {
   message: MessageType;
   compact?: boolean;
   currentUserId?: string;
+  currentUsername?: string;
   reactions?: MessageReaction[];
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
@@ -27,6 +28,7 @@ export function Message({
   message,
   compact = false,
   currentUserId,
+  currentUsername,
   reactions = [],
   onEdit,
   onDelete,
@@ -51,6 +53,7 @@ export function Message({
   const author = message.author;
   const displayName = author?.display_name || author?.username || "Unknown";
   const isOwn = currentUserId === message.author_id;
+  const mentionsMe = !!(currentUsername && message.content.includes(`@${currentUsername}`));
 
   useEffect(() => {
     if (isEditing) {
@@ -131,7 +134,7 @@ export function Message({
   ) : (
     <>
       <p className="text-text-secondary text-base leading-relaxed break-words">
-        <MessageContent content={message.content} />
+        <MessageContent content={message.content} currentUsername={currentUsername} />
         {message.edited_at && (
           <span className="text-text-muted text-xs ml-1">(edited)</span>
         )}
@@ -289,7 +292,7 @@ export function Message({
 
   if (compact) {
     return (
-      <div className="group relative flex items-start gap-4 px-4 py-0.5 hover:bg-msg-hover">
+      <div className={`group relative flex items-start gap-4 px-4 py-0.5 hover:bg-msg-hover ${mentionsMe ? "border-l-2 border-accent/60 bg-accent/[0.04]" : ""}`}>
         {actions}
         <span className="text-text-muted text-xs w-10 mt-0.5 text-right shrink-0 opacity-0 group-hover:opacity-100 transition-opacity leading-relaxed">
           {formatTimestamp(message.created_at, true)}
@@ -300,7 +303,7 @@ export function Message({
   }
 
   return (
-    <div className="group relative flex items-start gap-4 px-4 py-2 hover:bg-msg-hover mt-1">
+    <div className={`group relative flex items-start gap-4 px-4 py-2 hover:bg-msg-hover mt-1 ${mentionsMe ? "border-l-2 border-accent/60 bg-accent/[0.04]" : ""}`}>
       {lightboxSrc && (
         <ImageLightbox src={lightboxSrc.src} alt={lightboxSrc.alt} onClose={() => setLightboxSrc(null)} />
       )}
