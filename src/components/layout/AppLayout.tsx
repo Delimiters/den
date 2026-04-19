@@ -88,6 +88,8 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     document.title = unreadCount > 0 ? `(${unreadCount}) Den` : "Den";
   }, [unreadCount]);
 
+  const voicePanelRef = useRef<HTMLDivElement>(null);
+
   // Toast + desktop notification on @mention in guild channels
   const messages = useAppStore((s) => s.messages);
   const latestMsgId = useRef<string | null>(null);
@@ -231,6 +233,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           userStatus={userStatus}
           unread={unread}
           canManageChannels={hasPermission(myPermissions, Permissions.MANAGE_CHANNELS)}
+          voicePanelRef={voicePanelRef}
           onChannelSelect={(id) => setCurrentChannel(id)}
           onChannelsRefresh={() => currentGuildId && loadChannels(currentGuildId)}
           onStatusChange={setUserStatus}
@@ -261,6 +264,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               livekitUrl={voiceLivekitUrl}
               channel={currentChannel}
               currentUserId={currentUser.id}
+              voicePanelRef={voicePanelRef}
               onLeave={leaveVoice}
             />
           </Suspense>
