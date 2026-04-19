@@ -72,7 +72,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const { voiceChannelId, voiceToken, voiceLivekitUrl } = useAppStore();
   const { join: joinVoice, leave: leaveVoice } = useVoiceChannel(currentUser.id);
 
-  usePresence(currentUser, userStatus);
+  const { onlineUserIds } = usePresence(currentUser, userStatus);
   useUnreadTracker(currentGuildId);
   useDmUnreadTracker(dmChannels, currentUser.id, (payload) => {
     addToast(payload);
@@ -378,6 +378,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
         <MemberList
           guildId={currentGuildId}
           currentUserId={currentUser.id}
+          onlineUserIds={onlineUserIds}
           roles={roles}
           canManageRoles={hasPermission(myPermissions, Permissions.MANAGE_ROLES)}
           getUserRoles={getUserRoles}

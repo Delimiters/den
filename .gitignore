@@ -20,8 +20,10 @@ src-tauri/target/
 .env.local
 .env.*.local
 
-# Playwright MCP output (screenshots, snapshots from browser testing)
+# Playwright
 .playwright-mcp/
+playwright-report/
+test-results/
 
 # Editor directories and files
 .vscode/*
