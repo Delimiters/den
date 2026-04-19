@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabase";
+
 import { Avatar } from "../ui/Avatar";
 import { StatusIndicator } from "../ui/StatusIndicator";
 import type { GuildMember, Role, UserStatus } from "../../types";
@@ -7,6 +8,7 @@ import type { GuildMember, Role, UserStatus } from "../../types";
 interface MemberListProps {
   guildId: string | null;
   currentUserId?: string;
+  onlineUserIds?: Set<string>;
   roles?: Role[];
   canManageRoles?: boolean;
   getUserRoles?: (userId: string) => Role[];
@@ -26,11 +28,10 @@ interface ContextMenu {
 }
 
 export function MemberList({
-  guildId, currentUserId, roles = [], canManageRoles = false,
+  guildId, currentUserId, onlineUserIds, roles = [], canManageRoles = false,
   getUserRoles, onOpenDm, onAssignRole, onRevokeRole,
 }: MemberListProps) {
   const [members, setMembers] = useState<MemberWithStatus[]>([]);
-  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -52,28 +53,6 @@ export function MemberList({
     load();
   }, [guildId]);
 
-  // Subscribe to the global presence channel to get live online/offline state
-  useEffect(() => {
-    const channel = supabase.channel("presence:global", {
-      config: { presence: { key: currentUserId ?? "anon" } },
-    });
-
-    channel
-      .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState<{ user_id: string }>();
-        const ids = new Set(
-          Object.values(state)
-            .flat()
-            .map((p) => p.user_id)
-            .filter(Boolean)
-        );
-        setOnlineIds(ids);
-      })
-      .subscribe();
-
-    return () => { channel.unsubscribe(); };
-  }, [currentUserId]);
-
   // Close context menu on outside click
   useEffect(() => {
     if (!contextMenu) return;
@@ -93,7 +72,7 @@ export function MemberList({
 
   const membersWithStatus = members.map((m) => ({
     ...m,
-    presence_status: (m.user_id === currentUserId || onlineIds.has(m.user_id) ? "online" : "offline") as UserStatus,
+    presence_status: (m.user_id === currentUserId || onlineUserIds?.has(m.user_id) ? "online" : "offline") as UserStatus,
   }));
   const online = membersWithStatus.filter((m) => m.presence_status !== "offline");
   const offline = membersWithStatus.filter((m) => m.presence_status === "offline");

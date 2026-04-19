@@ -18,54 +18,43 @@ const members = [
   },
 ];
 
-// Presence state: user-2 is online, user-1 is not tracked (offline unless currentUserId)
-const presenceStateOnline = {
-  "user-2": [{ user_id: "user-2", username: "bob", status: "online" }],
-};
-
-vi.mock("../../lib/supabase", () => {
-  let syncHandler: (() => void) | null = null;
-
-  const channelMock = {
-    on: function (type: string, _filter: unknown, cb: () => void) {
-      if (type === "presence") syncHandler = cb;
-      return this;
-    },
-    subscribe: function () {
-      // fire sync after subscribe so onlineIds gets populated
-      setTimeout(() => syncHandler?.(), 0);
-      return this;
-    },
-    presenceState: () => presenceStateOnline,
-    unsubscribe: vi.fn(),
-  };
-
-  return {
-    supabase: {
-      from: () => ({
-        select: () => ({ eq: () => Promise.resolve({ data: members }) }),
-      }),
-      channel: () => channelMock,
-    },
-  };
-});
+vi.mock("../../lib/supabase", () => ({
+  supabase: {
+    from: () => ({
+      select: () => ({ eq: () => Promise.resolve({ data: members }) }),
+    }),
+  },
+}));
 
 describe("MemberList", () => {
-  it("shows current user as online regardless of DB presence status", async () => {
-    render(<MemberList guildId="guild-1" currentUserId="user-1" />);
+  it("shows current user as online regardless of onlineUserIds", async () => {
+    render(<MemberList guildId="guild-1" currentUserId="user-1" onlineUserIds={new Set()} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Online — 1")).toBeInTheDocument();
+      expect(screen.getByText("Offline — 1")).toBeInTheDocument();
+    });
+  });
+
+  it("shows other users as online when their id is in onlineUserIds", async () => {
+    render(
+      <MemberList
+        guildId="guild-1"
+        currentUserId="user-1"
+        onlineUserIds={new Set(["user-2"])}
+      />
+    );
 
     await waitFor(() => {
       expect(screen.getByText("Online — 2")).toBeInTheDocument();
     });
   });
 
-  it("shows current user as offline when currentUserId is not provided", async () => {
-    render(<MemberList guildId="guild-1" />);
+  it("shows all offline when no currentUserId and empty onlineUserIds", async () => {
+    render(<MemberList guildId="guild-1" onlineUserIds={new Set()} />);
 
     await waitFor(() => {
-      // alice has offline status in DB and no currentUserId override → shows in offline group
-      expect(screen.getByText("Offline — 1")).toBeInTheDocument();
-      expect(screen.getByText("Online — 1")).toBeInTheDocument();
+      expect(screen.getByText("Offline — 2")).toBeInTheDocument();
     });
   });
 

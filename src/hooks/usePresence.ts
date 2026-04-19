@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { User, UserStatus } from "../types";
 
-/** Tracks the current user's presence. Call setStatus to update the displayed status. */
+/** Tracks the current user's presence and returns the set of online user IDs. */
 export function usePresence(currentUser: User | null, status: UserStatus = "online") {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!currentUser) return;
@@ -15,22 +16,32 @@ export function usePresence(currentUser: User | null, status: UserStatus = "onli
 
     channelRef.current = channel;
 
-    channel.subscribe(async (sub) => {
-      if (sub === "SUBSCRIBED") {
-        await channel.track({
-          user_id: currentUser.id,
-          username: currentUser.username,
-          status,
-          online_at: new Date().toISOString(),
-        });
+    function syncOnline() {
+      const state = channel.presenceState<{ user_id: string }>();
+      const ids = new Set(
+        Object.values(state).flat().map((p) => p.user_id).filter(Boolean)
+      );
+      setOnlineUserIds(ids);
+    }
 
-        await supabase.from("user_presence").upsert({
-          user_id: currentUser.id,
-          status,
-          last_seen: new Date().toISOString(),
-        });
-      }
-    });
+    channel
+      .on("presence", { event: "sync" }, syncOnline)
+      .subscribe(async (sub) => {
+        if (sub === "SUBSCRIBED") {
+          await channel.track({
+            user_id: currentUser.id,
+            username: currentUser.username,
+            status,
+            online_at: new Date().toISOString(),
+          });
+
+          await supabase.from("user_presence").upsert({
+            user_id: currentUser.id,
+            status,
+            last_seen: new Date().toISOString(),
+          });
+        }
+      });
 
     return () => {
       supabase.from("user_presence").upsert({
@@ -57,4 +68,6 @@ export function usePresence(currentUser: User | null, status: UserStatus = "onli
       last_seen: new Date().toISOString(),
     });
   }, [status]);
+
+  return { onlineUserIds };
 }
