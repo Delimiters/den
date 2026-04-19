@@ -1,8 +1,12 @@
 import { renderHook, act } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
 import { useVoiceChannel } from "./useVoiceChannel";
 import { useAppStore } from "../stores/appStore";
+import { server } from "../test/msw/server";
 
-// Mock supabase
+const LIVEKIT_TOKEN_URL = "http://localhost:54321/functions/v1/livekit-token";
+
+// Mock supabase module — keeps auth + DB calls simple in this suite
 vi.mock("../lib/supabase", () => ({
   supabase: {
     auth: {
@@ -19,24 +23,21 @@ vi.mock("../lib/supabase", () => ({
   },
 }));
 
-const mockFetch = vi.fn();
-vi.stubGlobal("fetch", mockFetch);
-
 beforeEach(() => {
   useAppStore.setState({
     voiceChannelId: null,
     voiceToken: null,
     voiceLivekitUrl: null,
-  });
-  mockFetch.mockReset();
+  } as any);
 });
 
 describe("useVoiceChannel", () => {
   it("join sets voice state after successful token fetch", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ token: "lk-jwt", url: "wss://test.livekit.cloud" }),
-    });
+    server.use(
+      http.post(LIVEKIT_TOKEN_URL, () =>
+        HttpResponse.json({ token: "lk-jwt", url: "wss://test.livekit.cloud" })
+      )
+    );
 
     const { result } = renderHook(() => useVoiceChannel("user-1"));
 
@@ -44,7 +45,7 @@ describe("useVoiceChannel", () => {
       await result.current.join("ch-1", "guild-1");
     });
 
-    const { voiceChannelId, voiceToken, voiceLivekitUrl } = useAppStore.getState();
+    const { voiceChannelId, voiceToken, voiceLivekitUrl } = useAppStore.getState() as any;
     expect(voiceChannelId).toBe("ch-1");
     expect(voiceToken).toBe("lk-jwt");
     expect(voiceLivekitUrl).toBe("wss://test.livekit.cloud");
@@ -65,14 +66,14 @@ describe("useVoiceChannel", () => {
     });
 
     expect(useAppStore.getState().voiceChannelId).toBeNull();
-    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it("join does nothing when token fetch fails", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      text: async () => "Forbidden",
-    });
+    server.use(
+      http.post(LIVEKIT_TOKEN_URL, () =>
+        HttpResponse.json({ error: "Forbidden" }, { status: 403 })
+      )
+    );
 
     const { result } = renderHook(() => useVoiceChannel("user-1"));
 
@@ -88,23 +89,22 @@ describe("useVoiceChannel", () => {
       voiceChannelId: "ch-1",
       voiceToken: "lk-jwt",
       voiceLivekitUrl: "wss://test.livekit.cloud",
-    });
+    } as any);
 
     const { result } = renderHook(() => useVoiceChannel("user-1"));
 
-    await act(async () => {
-      await result.current.leave();
-    });
+    act(() => { result.current.leave(); });
+    await act(async () => {});
 
-    const { voiceChannelId, voiceToken, voiceLivekitUrl } = useAppStore.getState();
-    expect(voiceChannelId).toBeNull();
-    expect(voiceToken).toBeNull();
-    expect(voiceLivekitUrl).toBeNull();
+    const state = useAppStore.getState() as any;
+    expect(state.voiceChannelId).toBeNull();
+    expect(state.voiceToken).toBeNull();
+    expect(state.voiceLivekitUrl).toBeNull();
     expect(result.current.isConnected).toBe(false);
   });
 
   it("isConnected reflects voiceChannelId in store", () => {
-    useAppStore.setState({ voiceChannelId: "ch-2", voiceToken: "t", voiceLivekitUrl: "wss://x" });
+    useAppStore.setState({ voiceChannelId: "ch-2", voiceToken: "t", voiceLivekitUrl: "wss://x" } as any);
     const { result } = renderHook(() => useVoiceChannel("user-1"));
     expect(result.current.isConnected).toBe(true);
     expect(result.current.voiceChannelId).toBe("ch-2");

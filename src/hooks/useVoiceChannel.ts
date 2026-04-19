@@ -39,7 +39,8 @@ export function useVoiceChannel(currentUserId: string) {
 
   const leave = useCallback(() => {
     if (!useAppStore.getState().voiceChannelId) return;
-    supabase.from("voice_sessions").delete().eq("user_id", currentUserId);
+    // .then() is required — Supabase builders are lazy and only send the HTTP request when awaited
+    supabase.from("voice_sessions").delete().eq("user_id", currentUserId).then();
     clearVoiceChannel();
   }, [currentUserId, clearVoiceChannel]);
 
@@ -47,7 +48,7 @@ export function useVoiceChannel(currentUserId: string) {
   useEffect(() => {
     return () => {
       if (useAppStore.getState().voiceChannelId) {
-        supabase.from("voice_sessions").delete().eq("user_id", currentUserId);
+        supabase.from("voice_sessions").delete().eq("user_id", currentUserId).then();
         useAppStore.getState().clearVoiceChannel();
       }
     };

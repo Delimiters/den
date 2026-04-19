@@ -1,6 +1,11 @@
 import "@testing-library/jest-dom";
-import { afterEach } from "vitest";
+import { afterEach, beforeAll, afterAll } from "vitest";
 import { cleanup } from "@testing-library/react";
+import { server } from "./msw/server";
 
-// Automatically unmount React trees after each test
-afterEach(() => cleanup());
+beforeAll(() => server.listen({ onUnhandledRequest: "warn" }));
+afterEach(() => {
+  cleanup();
+  server.resetHandlers();
+});
+afterAll(() => server.close());
