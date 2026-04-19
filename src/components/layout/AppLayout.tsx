@@ -19,6 +19,7 @@ import { MessageList } from "../chat/MessageList";
 import { MessageInput } from "../chat/MessageInput";
 import { ServerSettingsModal } from "./ServerSettingsModal";
 import { MessageSearch } from "../chat/MessageSearch";
+import { PinnedMessages, pinMessage } from "../chat/PinnedMessages";
 import { ToastContainer } from "../ui/Toast";
 import { useToasts } from "../../hooks/useToasts";
 import { requestNotificationPermission, notify } from "../../utils/desktopNotification";
@@ -38,6 +39,7 @@ interface AppLayoutProps {
 export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const [showServerSettings, setShowServerSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showPins, setShowPins] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
   const [replyingTo, setReplyingTo] = useState<import("../../types").Message | null>(null);
   const { toasts, addToast, dismiss } = useToasts();
@@ -140,8 +142,8 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   useEffect(() => {
     if (viewMode === "guild" && currentGuildId) loadChannels(currentGuildId);
   }, [currentGuildId, viewMode]);
-  // Clear reply context on channel/DM switch
-  useEffect(() => { setReplyingTo(null); }, [currentChannelId, currentDmId]);
+  // Clear reply context and pins panel on channel/DM switch
+  useEffect(() => { setReplyingTo(null); setShowPins(false); }, [currentChannelId, currentDmId]);
 
   async function loadGuilds() {
     const { data } = await supabase
@@ -289,6 +291,18 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
                 </>
               )}
               <div className="flex-1" />
+              {/* Pinned messages button — guild text channels only */}
+              {isGuildMode && currentChannel?.type === "text" && (
+                <button
+                  onClick={() => setShowPins((s) => !s)}
+                  className={`text-text-muted hover:text-text-primary transition-colors p-1.5 rounded hover:bg-msg-hover ${showPins ? "bg-msg-hover text-text-primary" : ""}`}
+                  title="Pinned messages"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
+                  </svg>
+                </button>
+              )}
               <button
                 onClick={() => setShowSearch(true)}
                 className="text-text-muted hover:text-text-primary transition-colors p-1.5 rounded hover:bg-msg-hover"
@@ -306,6 +320,14 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
                 onClose={() => setShowSearch(false)}
               />
             )}
+            {showPins && channelId && isGuildMode && (
+              <PinnedMessages
+                channelId={channelId}
+                currentUserId={currentUser.id}
+                canManage={hasPermission(myPermissions, Permissions.MANAGE_MESSAGES)}
+                onClose={() => setShowPins(false)}
+              />
+            )}
 
             <MessageList
               channelName={channelName}
@@ -317,6 +339,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               onDelete={deleteFn}
               onReact={isGuildMode ? (msgId, emoji) => toggleReaction(msgId, emoji, currentUser.id) : undefined}
               onReply={(msg) => setReplyingTo(msg)}
+              onPin={isGuildMode && currentChannel?.type === "text" ? (msgId) => pinMessage(currentChannelId!, msgId, currentUser.id) : undefined}
               onOpenDm={handleOpenDm}
             />
             <MessageInput

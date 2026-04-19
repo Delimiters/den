@@ -19,6 +19,7 @@ interface MessageProps {
   onDelete?: (messageId: string) => void;
   onReact?: (messageId: string, emoji: string) => void;
   onReply?: (message: MessageType) => void;
+  onPin?: (messageId: string) => void;
   onOpenDm?: (userId: string) => void;
 }
 
@@ -31,6 +32,7 @@ export function Message({
   onDelete,
   onReact,
   onReply,
+  onPin,
   onOpenDm,
 }: MessageProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -235,6 +237,19 @@ export function Message({
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" />
+          </svg>
+        </button>
+      )}
+
+      {/* Pin */}
+      {onPin && (
+        <button
+          onClick={() => onPin(message.id)}
+          className="w-9 h-9 flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-msg-hover transition-colors"
+          title="Pin message"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
           </svg>
         </button>
       )}

@@ -17,10 +17,11 @@ interface MessageListProps {
   onDelete?: (messageId: string) => void;
   onReact?: (messageId: string, emoji: string) => void;
   onReply?: (message: MessageType) => void;
+  onPin?: (messageId: string) => void;
   onOpenDm?: (userId: string) => void;
 }
 
-export function MessageList({ channelName, channelId, isDm = false, currentUserId, typingUsers = [], onEdit, onDelete, onReact, onReply, onOpenDm }: MessageListProps) {
+export function MessageList({ channelName, channelId, isDm = false, currentUserId, typingUsers = [], onEdit, onDelete, onReact, onReply, onPin, onOpenDm }: MessageListProps) {
   const messages = useAppStore((s) => s.messages);
   const reactions = useAppStore((s) => s.reactions);
   const prependMessages = useAppStore((s) => s.prependMessages);
@@ -185,6 +186,7 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
               onDelete={onDelete}
               onReact={onReact}
               onReply={onReply}
+              onPin={onPin}
               onOpenDm={onOpenDm}
             />
           </div>
