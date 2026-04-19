@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -7,7 +8,7 @@ import {
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { ParticipantTile, ScreenShareView } from "./ParticipantTile";
-import { VoiceControls } from "./VoiceControls";
+import { VoiceStatusPanel } from "./VoiceStatusPanel";
 import type { Channel } from "../../types";
 
 interface VoiceChannelViewProps {
@@ -15,10 +16,11 @@ interface VoiceChannelViewProps {
   livekitUrl: string;
   channel: Channel;
   currentUserId: string;
+  voicePanelRef: React.RefObject<HTMLDivElement | null>;
   onLeave: () => void;
 }
 
-export function VoiceChannelView({ token, livekitUrl, channel, currentUserId, onLeave }: VoiceChannelViewProps) {
+export function VoiceChannelView({ token, livekitUrl, channel, currentUserId, voicePanelRef, onLeave }: VoiceChannelViewProps) {
   const onLeaveRef = useRef(onLeave);
   onLeaveRef.current = onLeave;
 
@@ -38,6 +40,7 @@ export function VoiceChannelView({ token, livekitUrl, channel, currentUserId, on
       <VoiceRoomContent
         channelName={channel.name}
         currentUserId={currentUserId}
+        voicePanelRef={voicePanelRef}
         onLeave={onLeave}
       />
     </LiveKitRoom>
@@ -47,22 +50,33 @@ export function VoiceChannelView({ token, livekitUrl, channel, currentUserId, on
 function VoiceRoomContent({
   channelName,
   currentUserId,
+  voicePanelRef,
   onLeave,
 }: {
   channelName: string;
   currentUserId: string;
+  voicePanelRef: React.RefObject<HTMLDivElement | null>;
   onLeave: () => void;
 }) {
   const participants = useParticipants();
   const screenShareTracks = useTracks([Track.Source.ScreenShare]);
   const hasScreenShare = screenShareTracks.length > 0;
 
+  const sidebarPanel = voicePanelRef.current
+    ? createPortal(
+        <VoiceStatusPanel channelName={channelName} onLeave={onLeave} />,
+        voicePanelRef.current
+      )
+    : null;
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* Audio renderer — plays remote participants' audio */}
       <RoomAudioRenderer />
 
-      {/* Main content area */}
+      {/* Portal renders VoiceStatusPanel into the sidebar */}
+      {sidebarPanel}
+
+      {/* Participant view */}
       <div className="flex-1 flex flex-col gap-4 p-4 overflow-y-auto min-h-0">
         <div className="flex items-center gap-2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted">
@@ -72,12 +86,10 @@ function VoiceRoomContent({
           <span className="text-text-muted text-xs">{participants.length} connected</span>
         </div>
 
-        {/* Screen share — shown large when active */}
         {hasScreenShare && (
           <ScreenShareView trackRef={screenShareTracks[0]} />
         )}
 
-        {/* Participant grid */}
         <div className={`flex flex-wrap gap-3 ${hasScreenShare ? "" : "flex-1 content-start"}`}>
           {participants.map((participant) => (
             <ParticipantTile
@@ -94,9 +106,6 @@ function VoiceRoomContent({
           </div>
         )}
       </div>
-
-      {/* Voice controls bar */}
-      <VoiceControls channelName={channelName} onLeave={onLeave} />
     </div>
   );
 }

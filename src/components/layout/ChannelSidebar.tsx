@@ -19,6 +19,7 @@ interface ChannelSidebarProps {
   userStatus: UserStatus;
   unread: Record<string, true>;
   canManageChannels?: boolean;
+  voicePanelRef?: React.RefObject<HTMLDivElement | null>;
   onChannelSelect: (channelId: string) => void;
   onChannelsRefresh: () => void;
   onStatusChange: (s: UserStatus) => void;
@@ -34,6 +35,7 @@ export function ChannelSidebar({
   userStatus,
   unread,
   canManageChannels = false,
+  voicePanelRef,
   onChannelSelect,
   onChannelsRefresh,
   onStatusChange,
@@ -202,6 +204,9 @@ export function ChannelSidebar({
           </>
         )}
       </div>
+
+      {/* Voice status panel portal target — VoiceStatusPanel portals into here when in voice */}
+      <div ref={voicePanelRef} />
 
       {/* User panel */}
       <div className="h-14 bg-overlay px-3 flex items-center gap-2 shrink-0 relative">
