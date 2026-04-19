@@ -30,38 +30,49 @@ export function MemberList({
   getUserRoles, onOpenDm, onAssignRole, onRevokeRole,
 }: MemberListProps) {
   const [members, setMembers] = useState<MemberWithStatus[]>([]);
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Load guild members (static data — name, avatar, etc.)
   useEffect(() => {
     if (!guildId) { setMembers([]); return; }
 
     async function load() {
       const { data } = await supabase
         .from("guild_members")
-        .select("*, user:users!user_id(*, presence:user_presence!user_id(status))")
+        .select("*, user:users!user_id(*)")
         .eq("guild_id", guildId);
 
       if (data) {
-        const mapped: MemberWithStatus[] = data.map((m: any) => ({
-          ...m,
-          presence_status: m.user_id === currentUserId
-            ? "online"
-            : m.user?.presence?.[0]?.status ?? "offline",
-        }));
-        setMembers(mapped);
+        setMembers(data.map((m: any) => ({ ...m, presence_status: "offline" as UserStatus })));
       }
     }
 
     load();
+  }, [guildId]);
 
-    const sub = supabase
-      .channel(`presence:guild:${guildId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "user_presence" }, () => load())
+  // Subscribe to the global presence channel to get live online/offline state
+  useEffect(() => {
+    const channel = supabase.channel("presence:global", {
+      config: { presence: { key: currentUserId ?? "anon" } },
+    });
+
+    channel
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState<{ user_id: string }>();
+        const ids = new Set(
+          Object.values(state)
+            .flat()
+            .map((p) => p.user_id)
+            .filter(Boolean)
+        );
+        setOnlineIds(ids);
+      })
       .subscribe();
 
-    return () => { sub.unsubscribe(); };
-  }, [guildId]);
+    return () => { channel.unsubscribe(); };
+  }, [currentUserId]);
 
   // Close context menu on outside click
   useEffect(() => {
@@ -80,8 +91,12 @@ export function MemberList({
     setContextMenu({ x: e.clientX, y: e.clientY, member });
   }
 
-  const online = members.filter((m) => m.presence_status !== "offline");
-  const offline = members.filter((m) => m.presence_status === "offline");
+  const membersWithStatus = members.map((m) => ({
+    ...m,
+    presence_status: (m.user_id === currentUserId || onlineIds.has(m.user_id) ? "online" : "offline") as UserStatus,
+  }));
+  const online = membersWithStatus.filter((m) => m.presence_status !== "offline");
+  const offline = membersWithStatus.filter((m) => m.presence_status === "offline");
 
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0 overflow-y-auto">
@@ -104,6 +119,7 @@ export function MemberList({
             onContextMenu={handleContextMenu}
           />
         )}
+
       </div>
 
       {/* Context menu */}
