@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
-import type { User } from "../types";
+import type { User, UserStatus } from "../types";
 
-/** Tracks the current user's presence and returns a map of userId → status */
-export function usePresence(currentUser: User | null) {
+/** Tracks the current user's presence. Call setStatus to update the displayed status. */
+export function usePresence(currentUser: User | null, status: UserStatus = "online") {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
@@ -15,24 +15,23 @@ export function usePresence(currentUser: User | null) {
 
     channelRef.current = channel;
 
-    channel.subscribe(async (status) => {
-      if (status === "SUBSCRIBED") {
+    channel.subscribe(async (sub) => {
+      if (sub === "SUBSCRIBED") {
         await channel.track({
           user_id: currentUser.id,
           username: currentUser.username,
+          status,
           online_at: new Date().toISOString(),
         });
 
-        // Also write to the DB for persistent last-seen
         await supabase.from("user_presence").upsert({
           user_id: currentUser.id,
-          status: "online",
+          status,
           last_seen: new Date().toISOString(),
         });
       }
     });
 
-    // Mark offline on cleanup
     return () => {
       supabase.from("user_presence").upsert({
         user_id: currentUser.id,
@@ -42,4 +41,20 @@ export function usePresence(currentUser: User | null) {
       channel.unsubscribe();
     };
   }, [currentUser?.id]);
+
+  // Update status when it changes without re-subscribing
+  useEffect(() => {
+    if (!currentUser || !channelRef.current) return;
+    channelRef.current.track({
+      user_id: currentUser.id,
+      username: currentUser.username,
+      status,
+      online_at: new Date().toISOString(),
+    });
+    supabase.from("user_presence").upsert({
+      user_id: currentUser.id,
+      status,
+      last_seen: new Date().toISOString(),
+    });
+  }, [status]);
 }

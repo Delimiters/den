@@ -1,21 +1,25 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "../../lib/supabase";
 import { Avatar } from "../ui/Avatar";
 import { StatusIndicator } from "../ui/StatusIndicator";
-import type { DmChannel, User } from "../../types";
+import type { DmChannel, User, UserStatus } from "../../types";
 
 interface DmSidebarProps {
   dmChannels: DmChannel[];
   currentDmId: string | null;
   currentUser: User;
+  userStatus: UserStatus;
   unread: Record<string, true>;
   onDmSelect: (dmId: string) => void;
   onOpenDm: (userId: string) => void;
+  onStatusChange: (s: UserStatus) => void;
   onSignOut: () => void;
 }
 
-export function DmSidebar({ dmChannels, currentDmId, currentUser, unread, onDmSelect, onOpenDm, onSignOut }: DmSidebarProps) {
+export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, unread, onDmSelect, onOpenDm, onStatusChange, onSignOut }: DmSidebarProps) {
   const [showNewDm, setShowNewDm] = useState(false);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
       {/* Header */}
@@ -87,11 +91,29 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, unread, onDmSe
       </div>
 
       {/* User panel */}
-      <div className="h-14 bg-overlay px-3 flex items-center gap-2 shrink-0">
-        <div className="relative">
+      <div className="h-14 bg-overlay px-3 flex items-center gap-2 shrink-0 relative">
+        {showStatusMenu && (
+          <div
+            ref={statusMenuRef}
+            className="absolute bottom-16 left-3 bg-overlay border border-divider rounded-lg shadow-xl py-1 z-20 w-44"
+          >
+            {(["online", "idle", "dnd", "offline"] as UserStatus[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => { onStatusChange(s); setShowStatusMenu(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-msg-hover transition-colors ${userStatus === s ? "text-text-primary" : "text-text-secondary"}`}
+              >
+                <StatusIndicator status={s} size={10} />
+                <span className="capitalize">{s === "dnd" ? "Do Not Disturb" : s}</span>
+                {userStatus === s && <span className="ml-auto text-accent text-xs">✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="relative cursor-pointer" onClick={() => setShowStatusMenu((v) => !v)}>
           <Avatar src={currentUser.avatar_url} name={currentUser.display_name || currentUser.username} size={32} />
           <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-overlay rounded-full flex items-center justify-center">
-            <StatusIndicator status="online" size={10} />
+            <StatusIndicator status={userStatus} size={10} />
           </span>
         </div>
         <div className="flex-1 min-w-0">

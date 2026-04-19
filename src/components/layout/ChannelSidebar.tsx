@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabase";
-import type { Channel, Guild, User } from "../../types";
+import type { Channel, Guild, User, UserStatus } from "../../types";
 import { Avatar } from "../ui/Avatar";
 import { StatusIndicator } from "../ui/StatusIndicator";
 import { UserSettingsModal } from "./UserSettingsModal";
@@ -16,10 +16,12 @@ interface ChannelSidebarProps {
   channels: Channel[];
   currentChannelId: string | null;
   currentUser: User;
+  userStatus: UserStatus;
   unread: Record<string, true>;
   canManageChannels?: boolean;
   onChannelSelect: (channelId: string) => void;
   onChannelsRefresh: () => void;
+  onStatusChange: (s: UserStatus) => void;
   onSignOut: () => void;
   onOpenServerSettings?: () => void;
 }
@@ -29,17 +31,21 @@ export function ChannelSidebar({
   channels,
   currentChannelId,
   currentUser,
+  userStatus,
   unread,
   canManageChannels = false,
   onChannelSelect,
   onChannelsRefresh,
+  onStatusChange,
   onSignOut,
   onOpenServerSettings,
 }: ChannelSidebarProps) {
   const [showInvite, setShowInvite] = useState(false);
   const [showAddChannel, setShowAddChannel] = useState<"text" | "voice" | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [voiceSessions, setVoiceSessions] = useState<VoiceSession[]>([]);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
 
   const categories = channels.filter((c) => c.type === "category").sort((a, b) => a.position - b.position);
   const hasCategories = categories.length > 0;
@@ -198,15 +204,34 @@ export function ChannelSidebar({
       </div>
 
       {/* User panel */}
-      <div className="h-14 bg-overlay px-3 flex items-center gap-2 shrink-0">
-        <div className="relative">
+      <div className="h-14 bg-overlay px-3 flex items-center gap-2 shrink-0 relative">
+        {/* Status picker popover */}
+        {showStatusMenu && (
+          <div
+            ref={statusMenuRef}
+            className="absolute bottom-16 left-3 bg-overlay border border-divider rounded-lg shadow-xl py-1 z-20 w-44"
+          >
+            {(["online", "idle", "dnd", "offline"] as UserStatus[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => { onStatusChange(s); setShowStatusMenu(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-msg-hover transition-colors ${userStatus === s ? "text-text-primary" : "text-text-secondary"}`}
+              >
+                <StatusIndicator status={s} size={10} />
+                <span className="capitalize">{s === "dnd" ? "Do Not Disturb" : s}</span>
+                {userStatus === s && <span className="ml-auto text-accent text-xs">✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="relative cursor-pointer" onClick={() => setShowStatusMenu((v) => !v)}>
           <Avatar
             src={currentUser.avatar_url}
             name={currentUser.display_name || currentUser.username}
             size={32}
           />
           <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-overlay rounded-full flex items-center justify-center">
-            <StatusIndicator status="online" size={10} />
+            <StatusIndicator status={userStatus} size={10} />
           </span>
         </div>
         <div className="flex-1 min-w-0">

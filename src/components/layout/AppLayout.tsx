@@ -42,6 +42,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const [showPins, setShowPins] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
   const [replyingTo, setReplyingTo] = useState<import("../../types").Message | null>(null);
+  const [userStatus, setUserStatus] = useState<import("../../types").UserStatus>("online");
   const { toasts, addToast, dismiss } = useToasts();
 
   const {
@@ -71,7 +72,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const { voiceChannelId, voiceToken, voiceLivekitUrl } = useAppStore();
   const { join: joinVoice, leave: leaveVoice } = useVoiceChannel(currentUser.id);
 
-  usePresence(currentUser);
+  usePresence(currentUser, userStatus);
   useUnreadTracker(currentGuildId);
   useDmUnreadTracker(dmChannels, currentUser.id, (payload) => {
     addToast(payload);
@@ -227,10 +228,12 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           channels={channels}
           currentChannelId={currentChannelId}
           currentUser={currentUser}
+          userStatus={userStatus}
           unread={unread}
           canManageChannels={hasPermission(myPermissions, Permissions.MANAGE_CHANNELS)}
           onChannelSelect={(id) => setCurrentChannel(id)}
           onChannelsRefresh={() => currentGuildId && loadChannels(currentGuildId)}
+          onStatusChange={setUserStatus}
           onSignOut={onSignOut}
           onOpenServerSettings={() => setShowServerSettings(true)}
         />
@@ -239,9 +242,11 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           dmChannels={dmChannels}
           currentDmId={currentDmId}
           currentUser={currentUser}
+          userStatus={userStatus}
           unread={unread}
           onDmSelect={(id) => setCurrentDm(id)}
           onOpenDm={handleOpenDm}
+          onStatusChange={setUserStatus}
           onSignOut={onSignOut}
         />
       )}
