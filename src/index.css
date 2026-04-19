@@ -15,9 +15,9 @@
   --color-text-muted: #80848e;
   --color-text-link: #00a8fc;
 
-  /* Accent (blurple) */
-  --color-accent: #5865f2;
-  --color-accent-hover: #4752c4;
+  /* Accent */
+  --color-accent: #7c4dff;
+  --color-accent-hover: #651fff;
 
   /* Status indicators */
   --color-status-online: #23a559;
