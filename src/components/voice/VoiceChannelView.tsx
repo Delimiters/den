@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -18,6 +19,13 @@ interface VoiceChannelViewProps {
 }
 
 export function VoiceChannelView({ token, livekitUrl, channel, currentUserId, onLeave }: VoiceChannelViewProps) {
+  const onLeaveRef = useRef(onLeave);
+  onLeaveRef.current = onLeave;
+
+  useEffect(() => {
+    return () => { onLeaveRef.current(); };
+  }, []);
+
   return (
     <LiveKitRoom
       token={token}

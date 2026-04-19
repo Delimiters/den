@@ -37,9 +37,10 @@ export function useVoiceChannel(currentUserId: string) {
     });
   }, [currentUserId, setVoiceChannel]);
 
-  const leave = useCallback(async () => {
+  const leave = useCallback(() => {
+    if (!useAppStore.getState().voiceChannelId) return;
+    supabase.from("voice_sessions").delete().eq("user_id", currentUserId);
     clearVoiceChannel();
-    await supabase.from("voice_sessions").delete().eq("user_id", currentUserId);
   }, [currentUserId, clearVoiceChannel]);
 
   // Clean up voice session if the component unmounts while connected
