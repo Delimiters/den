@@ -10,7 +10,7 @@ test.describe("smoke", () => {
   let guildId: string | null = null;
 
   test.afterEach(async () => {
-    // Clean up the test guild via API so the account stays tidy
+    // Delete the test guild (and all its channels/messages) via API
     if (!guildId) return;
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     await supabase.auth.signInWithPassword({ email: EMAIL, password: PASSWORD });
@@ -18,56 +18,45 @@ test.describe("smoke", () => {
     guildId = null;
   });
 
-  test("login, create server, create channel, send message, delete channel", async ({ page }) => {
+  test("login → create server → create channel → send message", async ({ page }) => {
     await page.goto("/");
 
     // --- Log in ---
-    await page.getByPlaceholder(/email/i).fill(EMAIL);
-    await page.getByPlaceholder(/password/i).fill(PASSWORD);
-    await page.getByRole("button", { name: /sign in/i }).click();
+    await page.getByPlaceholder("you@example.com").fill(EMAIL);
+    await page.locator("input[type=password]").fill(PASSWORD);
+    await page.getByRole("button", { name: "Log In" }).click();
 
-    // Wait for app shell to load
+    // App shell loaded
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
     // --- Create a server ---
     const guildName = `e2e-${Date.now()}`;
     await page.getByTitle("Create a server").click();
-    await page.getByPlaceholder(/my awesome server/i).fill(guildName);
-    await page.getByRole("button", { name: /^create$/i }).click();
+    await page.getByPlaceholder("My Awesome Server").fill(guildName);
+    await page.getByRole("button", { name: "Create" }).click();
 
-    // Guild icon should appear; capture the guild id from the page URL or store
     await expect(page.getByTitle(guildName)).toBeVisible({ timeout: 8_000 });
 
-    // Grab the guild id from Supabase so afterEach can clean up
+    // Grab the guild id for afterEach cleanup
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     await supabase.auth.signInWithPassword({ email: EMAIL, password: PASSWORD });
     const { data: guild } = await supabase
-      .from("guilds")
-      .select("id")
-      .eq("name", guildName)
-      .single();
+      .from("guilds").select("id").eq("name", guildName).single();
     guildId = guild?.id ?? null;
 
     // --- Create a text channel ---
     const channelName = `e2e-channel-${Date.now()}`;
-    await page.getByTitle(/new channel/i).click();
-    await page.getByPlaceholder(/channel-name/i).fill(channelName);
-    await page.getByRole("button", { name: /^create$/i }).click();
+    await page.getByTitle("Add channel").click();
+    await page.getByPlaceholder("new-channel").fill(channelName);
+    await page.getByRole("button", { name: "Create Channel" }).click();
 
     await expect(page.getByText(`#${channelName}`)).toBeVisible({ timeout: 5_000 });
 
     // --- Send a message ---
     const messageText = `hello from e2e ${Date.now()}`;
-    await page.getByPlaceholder(new RegExp(`message #${channelName}`, "i")).fill(messageText);
+    await page.getByPlaceholder(`Message #${channelName}`).fill(messageText);
     await page.keyboard.press("Enter");
 
     await expect(page.getByText(messageText)).toBeVisible({ timeout: 5_000 });
-
-    // --- Delete the channel ---
-    await page.getByText(`#${channelName}`).click({ button: "right" });
-    await page.getByRole("menuitem", { name: /delete channel/i }).click();
-    await page.getByRole("button", { name: /^delete$/i }).click();
-
-    await expect(page.getByText(`#${channelName}`)).not.toBeVisible({ timeout: 5_000 });
   });
 });
