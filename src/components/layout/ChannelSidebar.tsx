@@ -64,7 +64,7 @@ export function ChannelSidebar({
 
     const sub = supabase
       .channel(`voice:${guild.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "voice_sessions" }, async () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "voice_sessions", filter: `guild_id=eq.${guild.id}` }, async () => {
         const { data } = await supabase
           .from("voice_sessions")
           .select("user_id, channel_id, user:users!user_id(username, display_name, avatar_url)")
