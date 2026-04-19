@@ -130,7 +130,7 @@ function ControlButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`w-9 h-9 rounded flex items-center justify-center transition-colors disabled:opacity-50 ${
+      className={`w-10 h-10 rounded flex items-center justify-center transition-colors disabled:opacity-50 ${
         danger
           ? "text-danger hover:bg-danger/20"
           : active

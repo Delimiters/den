@@ -325,7 +325,7 @@ export function Message({
         <div className="flex items-baseline gap-2 mb-0.5">
           <span
             onClick={openProfile}
-            className="text-text-primary text-sm font-semibold cursor-pointer hover:underline"
+            className="text-text-primary text-base font-semibold cursor-pointer hover:underline"
           >
             {displayName}
           </span>

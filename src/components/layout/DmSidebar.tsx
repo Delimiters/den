@@ -24,7 +24,7 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
       {/* Header */}
       <div className="h-12 px-4 flex items-center justify-between border-b border-divider shadow-sm shrink-0">
-        <h2 className="text-text-primary font-semibold text-sm">Direct Messages</h2>
+        <h2 className="text-text-primary font-bold text-base">Direct Messages</h2>
         <button
           onClick={() => setShowNewDm(true)}
           title="New message"
@@ -117,7 +117,7 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-text-primary text-xs font-semibold truncate">
+          <p className="text-text-primary text-sm font-semibold truncate">
             {currentUser.display_name || currentUser.username}
           </p>
           <p className="text-text-muted text-xs truncate">@{currentUser.username}</p>

@@ -80,7 +80,7 @@ export function ChannelSidebar({
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
       {/* Guild header */}
       <div className="h-12 px-4 flex items-center justify-between border-b border-divider shadow-sm shrink-0 gap-2">
-        <h2 className="text-text-primary font-semibold text-sm truncate">
+        <h2 className="text-text-primary font-bold text-base truncate">
           {guild?.name ?? "Select a server"}
         </h2>
         {guild && (
@@ -143,7 +143,7 @@ export function ChannelSidebar({
                             return (
                               <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-0.5">
                                 <Avatar src={(s.user as any)?.avatar_url ?? null} name={name} size={14} />
-                                <span className="text-text-muted text-xs truncate">{name}</span>
+                                <span className="text-text-muted text-sm truncate">{name}</span>
                               </div>
                             );
                           })}
@@ -188,7 +188,7 @@ export function ChannelSidebar({
                             return (
                               <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-0.5">
                                 <Avatar src={(s.user as any)?.avatar_url ?? null} name={name} size={14} />
-                                <span className="text-text-muted text-xs truncate">{name}</span>
+                                <span className="text-text-muted text-sm truncate">{name}</span>
                               </div>
                             );
                           })}
@@ -235,7 +235,7 @@ export function ChannelSidebar({
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-text-primary text-xs font-semibold truncate">
+          <p className="text-text-primary text-sm font-semibold truncate">
             {currentUser.display_name || currentUser.username}
           </p>
           <p className="text-text-muted text-xs truncate">@{currentUser.username}</p>
@@ -345,7 +345,7 @@ function ChannelRow({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2 px-3 py-1.5 rounded text-sm transition-colors group ${
+      className={`w-full flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors group ${
         active
           ? "bg-white/[0.12] text-text-primary"
           : unread
