@@ -343,6 +343,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               channelId={channelId}
               isDm={!isGuildMode}
               currentUserId={currentUser.id}
+              currentUsername={currentUser.username}
               typingUsers={typing[activeChannelId ?? ""] ?? []}
               onEdit={editFn}
               onDelete={deleteFn}

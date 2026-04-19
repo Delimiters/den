@@ -12,6 +12,7 @@ interface MessageListProps {
   channelId?: string;
   isDm?: boolean;
   currentUserId?: string;
+  currentUsername?: string;
   typingUsers?: string[];
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
@@ -21,7 +22,7 @@ interface MessageListProps {
   onOpenDm?: (userId: string) => void;
 }
 
-export function MessageList({ channelName, channelId, isDm = false, currentUserId, typingUsers = [], onEdit, onDelete, onReact, onReply, onPin, onOpenDm }: MessageListProps) {
+export function MessageList({ channelName, channelId, isDm = false, currentUserId, currentUsername, typingUsers = [], onEdit, onDelete, onReact, onReply, onPin, onOpenDm }: MessageListProps) {
   const messages = useAppStore((s) => s.messages);
   const reactions = useAppStore((s) => s.reactions);
   const prependMessages = useAppStore((s) => s.prependMessages);
@@ -181,6 +182,7 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
               message={msg}
               compact={shouldCompact(msg, ordered[i - 1]) && !isDifferentDay(msg, ordered[i - 1])}
               currentUserId={currentUserId}
+              currentUsername={currentUsername}
               reactions={reactions[msg.id]}
               onEdit={onEdit}
               onDelete={onDelete}

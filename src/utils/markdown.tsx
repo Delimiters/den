@@ -39,7 +39,7 @@ function parseInline(text: string): Segment[] {
   return segments;
 }
 
-function renderSegments(segments: Segment[], key: string) {
+function renderSegments(segments: Segment[], key: string, currentUsername?: string) {
   return segments.map((seg, i) => {
     const k = `${key}-${i}`;
     switch (seg.type) {
@@ -65,12 +65,19 @@ function renderSegments(segments: Segment[], key: string) {
             {seg.value}
           </a>
         );
-      case "mention":
+      case "mention": {
+        const isSelf = currentUsername && seg.value === currentUsername;
         return (
-          <span key={k} className="bg-accent/20 text-accent rounded px-0.5 font-medium">
+          <span
+            key={k}
+            className={isSelf
+              ? "bg-accent/40 text-white font-semibold rounded px-0.5"
+              : "bg-accent/20 text-accent rounded px-0.5 font-medium"}
+          >
             @{seg.value}
           </span>
         );
+      }
       default:
         return <span key={k}>{seg.value}</span>;
     }
@@ -80,14 +87,10 @@ function renderSegments(segments: Segment[], key: string) {
 interface MessageContentProps {
   content: string;
   className?: string;
+  currentUsername?: string;
 }
 
-/**
- * Renders message content with safe inline markdown:
- * **bold**, *italic*, `inline code`, ```code blocks```, and https:// links.
- * No HTML is ever injected — all output is React elements.
- */
-export function MessageContent({ content, className = "" }: MessageContentProps) {
+export function MessageContent({ content, className = "", currentUsername }: MessageContentProps) {
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
   let i = 0;
@@ -116,7 +119,7 @@ export function MessageContent({ content, className = "" }: MessageContentProps)
     if (lines[i].startsWith("> ")) {
       elements.push(
         <blockquote key={i} className="border-l-4 border-text-muted pl-3 my-0.5 text-text-muted">
-          {renderSegments(parseInline(lines[i].slice(2)), `bq-${i}`)}
+          {renderSegments(parseInline(lines[i].slice(2)), `bq-${i}`, currentUsername)}
         </blockquote>
       );
       i++;
@@ -134,7 +137,7 @@ export function MessageContent({ content, className = "" }: MessageContentProps)
         : "text-text-primary font-semibold text-base mt-1 mb-0.5";
       elements.push(
         <div key={i} className={cls}>
-          {renderSegments(parseInline(headingMatch[2]), `h-${i}`)}
+          {renderSegments(parseInline(headingMatch[2]), `h-${i}`, currentUsername)}
         </div>
       );
       i++;
@@ -151,7 +154,7 @@ export function MessageContent({ content, className = "" }: MessageContentProps)
       elements.push(
         <ol key={i} className="list-decimal list-inside my-0.5 space-y-0.5 text-text-secondary">
           {listItems.map((item, j) => (
-            <li key={j}>{renderSegments(parseInline(item), `oli-${i}-${j}`)}</li>
+            <li key={j}>{renderSegments(parseInline(item), `oli-${i}-${j}`, currentUsername)}</li>
           ))}
         </ol>
       );
@@ -168,7 +171,7 @@ export function MessageContent({ content, className = "" }: MessageContentProps)
       elements.push(
         <ul key={i} className="list-disc list-inside my-0.5 space-y-0.5 text-text-secondary">
           {listItems.map((item, j) => (
-            <li key={j}>{renderSegments(parseInline(item), `li-${i}-${j}`)}</li>
+            <li key={j}>{renderSegments(parseInline(item), `li-${i}-${j}`, currentUsername)}</li>
           ))}
         </ul>
       );
@@ -179,7 +182,7 @@ export function MessageContent({ content, className = "" }: MessageContentProps)
     const segs = parseInline(lines[i]);
     elements.push(
       <span key={i}>
-        {renderSegments(segs, `line-${i}`)}
+        {renderSegments(segs, `line-${i}`, currentUsername)}
         {i < lines.length - 1 && <br />}
       </span>
     );
