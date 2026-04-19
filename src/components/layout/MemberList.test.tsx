@@ -27,7 +27,7 @@ vi.mock("../../lib/supabase", () => {
   let syncHandler: (() => void) | null = null;
 
   const channelMock = {
-    on: function (type: string, filter: unknown, cb: () => void) {
+    on: function (type: string, _filter: unknown, cb: () => void) {
       if (type === "presence") syncHandler = cb;
       return this;
     },
