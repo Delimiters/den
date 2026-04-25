@@ -51,6 +51,7 @@ test.describe("smoke", () => {
     await page.getByRole("button", { name: "Create Channel" }).click();
 
     await expect(page.getByText(`#${channelName}`)).toBeVisible({ timeout: 5_000 });
+    await page.getByText(`#${channelName}`).click();
 
     // --- Send a message ---
     const messageText = `hello from e2e ${Date.now()}`;
