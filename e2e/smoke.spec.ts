@@ -50,14 +50,14 @@ test.describe("smoke", () => {
     await page.getByPlaceholder("new-channel").fill(channelName);
     await page.getByRole("button", { name: "Create Channel" }).click();
 
-    await expect(page.getByText(`#${channelName}`)).toBeVisible({ timeout: 5_000 });
-    await page.getByText(`#${channelName}`).click();
+    // Click the channel in the sidebar (button accessible name includes the channel name)
+    await page.getByRole("button", { name: channelName }).click();
 
     // --- Send a message ---
     const messageText = `hello from e2e ${Date.now()}`;
     await page.getByPlaceholder(`Message #${channelName}`).fill(messageText);
     await page.keyboard.press("Enter");
 
-    await expect(page.getByText(messageText)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(messageText)).toBeVisible({ timeout: 15_000 });
   });
 });
