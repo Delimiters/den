@@ -4,13 +4,14 @@ type Segment =
   | { type: "text"; value: string }
   | { type: "bold"; value: string }
   | { type: "italic"; value: string }
+  | { type: "strike"; value: string }
   | { type: "code"; value: string }
   | { type: "link"; value: string; url: string }
   | { type: "mention"; value: string };
 
 function parseInline(text: string): Segment[] {
   // Apply patterns in priority order using a combined regex
-  const combined = /(`[^`]+`|\*\*[\s\S]+?\*\*|(?<!\*)\*(?!\*)[\s\S]+?(?<!\*)\*(?!\*)|_[\s\S]+?_|https?:\/\/[^\s<>"']+[^\s<>"'.,;!?]|@\w+)/g;
+  const combined = /(`[^`]+`|~~[\s\S]+?~~|\*\*[\s\S]+?\*\*|(?<!\*)\*(?!\*)[\s\S]+?(?<!\*)\*(?!\*)|_[\s\S]+?_|https?:\/\/[^\s<>"']+[^\s<>"'.,;!?]|@\w+)/g;
   const segments: Segment[] = [];
   let last = 0;
 
@@ -21,6 +22,8 @@ function parseInline(text: string): Segment[] {
     const raw = match[0];
     if (raw.startsWith("`")) {
       segments.push({ type: "code", value: raw.slice(1, -1) });
+    } else if (raw.startsWith("~~")) {
+      segments.push({ type: "strike", value: raw.slice(2, -2) });
     } else if (raw.startsWith("**")) {
       segments.push({ type: "bold", value: raw.slice(2, -2) });
     } else if (raw.startsWith("*") || raw.startsWith("_")) {
@@ -47,6 +50,8 @@ function renderSegments(segments: Segment[], key: string, currentUsername?: stri
         return <strong key={k} className="font-semibold text-text-primary">{seg.value}</strong>;
       case "italic":
         return <em key={k}>{seg.value}</em>;
+      case "strike":
+        return <s key={k} className="text-text-muted">{seg.value}</s>;
       case "code":
         return (
           <code key={k} className="bg-black/30 text-text-primary font-mono text-sm px-1 py-0.5 rounded">
