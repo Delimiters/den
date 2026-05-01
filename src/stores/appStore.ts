@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Guild, Channel, Message, User, GuildMember, MessageReaction, DmChannel } from "../types";
+import type { Guild, Channel, Message, User, GuildMember, MessageReaction, DmChannel, CustomEmoji } from "../types";
 
 interface AppStore {
   // Auth
@@ -22,9 +22,11 @@ interface AppStore {
   messages: Message[];
   members: GuildMember[];
   dmChannels: DmChannel[];
+  customEmojis: CustomEmoji[];
 
   setGuilds: (guilds: Guild[]) => void;
   setChannels: (channels: Channel[]) => void;
+  setCustomEmojis: (emojis: CustomEmoji[]) => void;
   setMessages: (messages: Message[]) => void;
   prependMessages: (messages: Message[]) => void;
   appendMessage: (message: Message) => void;
@@ -71,7 +73,7 @@ export const useAppStore = create<AppStore>((set) => ({
     set((s) => {
       // No-op if already viewing this guild in guild mode — prevents StrictMode double-fire clearing channels
       if (s.currentGuildId === guildId && s.viewMode === "guild") return s;
-      return { viewMode: "guild", currentGuildId: guildId, currentChannelId: null, channels: [], messages: [], members: [], reactions: {} };
+      return { viewMode: "guild", currentGuildId: guildId, currentChannelId: null, channels: [], messages: [], members: [], reactions: {}, customEmojis: [] };
     }),
   setCurrentChannel: (channelId) =>
     set((s) => {
@@ -91,9 +93,11 @@ export const useAppStore = create<AppStore>((set) => ({
   messages: [],
   members: [],
   dmChannels: [],
+  customEmojis: [],
 
   setGuilds: (guilds) => set({ guilds }),
   setChannels: (channels) => set({ channels }),
+  setCustomEmojis: (customEmojis) => set({ customEmojis }),
   setMessages: (messages) => set({ messages }),
   prependMessages: (older) =>
     set((s) => ({ messages: [...s.messages, ...older] })),
