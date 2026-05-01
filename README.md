@@ -239,8 +239,8 @@ Required repository secrets (Settings → Secrets and variables → Actions → 
 - [x] @mentions and mention highlighting
 - [x] Message search
 - [x] Markdown rendering (bold, italic, strikethrough, code blocks, lists, blockquotes, headings)
-- [ ] Link previews / embeds
-- [ ] Custom per-server emojis
+- [x] Link previews / embeds
+- [x] Custom per-server emojis
 - [x] System tray + minimize to tray
 - [ ] Auto-update (Tauri updater)
 - [ ] Mobile (iOS / Android via Tauri 2.0)

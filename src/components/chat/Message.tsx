@@ -3,6 +3,7 @@ import { Avatar } from "../ui/Avatar";
 import { UserPopover } from "../ui/UserPopover";
 import { ImageLightbox } from "../ui/ImageLightbox";
 import { EmojiPicker } from "../ui/EmojiPicker";
+import { LinkPreview } from "./LinkPreview";
 import type { Message as MessageType, MessageReaction } from "../../types";
 import { formatTimestamp } from "../../utils/message";
 import { MessageContent } from "../../utils/markdown";
@@ -139,6 +140,7 @@ export function Message({
           <span className="text-text-muted text-xs ml-1">(edited)</span>
         )}
       </p>
+      {!isEditing && <LinkPreview content={message.content} />}
       {message.attachments && message.attachments.length > 0 && (
         <div className="flex flex-col gap-2 mt-2 max-w-md">
           {message.attachments.map((att) =>
