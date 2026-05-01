@@ -54,6 +54,12 @@ describe("MessageContent", () => {
     expect(screen.getByText("code").tagName).toBe("CODE");
   });
 
+  it("renders ~~strikethrough~~ as s element", () => {
+    render(<MessageContent content="this is ~~deleted~~ text" />);
+    const el = screen.getByText("deleted");
+    expect(el.tagName).toBe("S");
+  });
+
   it("renders @mention with highlight styling", () => {
     render(<MessageContent content="hey @jake check this out" />);
     const mention = screen.getByText("@jake");
