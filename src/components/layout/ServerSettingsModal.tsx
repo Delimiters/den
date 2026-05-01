@@ -3,9 +3,10 @@ import { supabase } from "../../lib/supabase";
 import { useAppStore } from "../../stores/appStore";
 import { Permissions, PERMISSION_LABELS, hasPermission } from "../../utils/permissions";
 import { Avatar } from "../ui/Avatar";
-import type { Guild, Role } from "../../types";
+import { uploadFile } from "../../utils/upload";
+import type { Guild, Role, CustomEmoji } from "../../types";
 
-type Tab = "overview" | "roles";
+type Tab = "overview" | "roles" | "emoji";
 
 interface ServerSettingsModalProps {
   guild: Guild;
@@ -28,6 +29,8 @@ export function ServerSettingsModal({
 }: ServerSettingsModalProps) {
   const setGuilds = useAppStore((s) => s.setGuilds);
   const guilds = useAppStore((s) => s.guilds);
+  const customEmojis = useAppStore((s) => s.customEmojis);
+  const setCustomEmojis = useAppStore((s) => s.setCustomEmojis);
 
   const [tab, setTab] = useState<Tab>("overview");
 
@@ -49,6 +52,54 @@ export function ServerSettingsModal({
   const [saving, setSaving] = useState(false);
 
   const isOwner = guild.owner_id === currentUserId;
+
+  // Emoji state
+  const [emojiName, setEmojiName] = useState("");
+  const [emojiFile, setEmojiFile] = useState<File | null>(null);
+  const [emojiPreview, setEmojiPreview] = useState<string | null>(null);
+  const [emojiLoading, setEmojiLoading] = useState(false);
+  const [emojiError, setEmojiError] = useState<string | null>(null);
+  const emojiFileRef = useRef<HTMLInputElement>(null);
+
+  function handleEmojiFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 256 * 1024) { setEmojiError("Emoji must be under 256 KB"); return; }
+    if (!file.type.startsWith("image/")) { setEmojiError("Must be an image file"); return; }
+    setEmojiFile(file);
+    setEmojiPreview(URL.createObjectURL(file));
+    setEmojiError(null);
+  }
+
+  async function handleAddEmoji() {
+    if (!emojiFile || !emojiName.trim()) return;
+    const cleanName = emojiName.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_");
+    if (cleanName.length < 2) { setEmojiError("Name must be at least 2 characters"); return; }
+    setEmojiLoading(true);
+    setEmojiError(null);
+    const result = await uploadFile(emojiFile, currentUserId);
+    if (!result.ok) { setEmojiError(result.error); setEmojiLoading(false); return; }
+    const { data, error } = await supabase
+      .from("custom_emojis")
+      .insert({ guild_id: guild.id, name: cleanName, image_url: result.attachment.file_url, created_by: currentUserId })
+      .select()
+      .single();
+    if (error) {
+      setEmojiError(error.code === "23505" ? `Name "${cleanName}" is already taken` : "Failed to add emoji");
+      setEmojiLoading(false);
+      return;
+    }
+    setCustomEmojis([...customEmojis, data as CustomEmoji]);
+    setEmojiName("");
+    setEmojiFile(null);
+    setEmojiPreview(null);
+    setEmojiLoading(false);
+  }
+
+  async function handleDeleteEmoji(emojiId: string) {
+    await supabase.from("custom_emojis").delete().eq("id", emojiId);
+    setCustomEmojis(customEmojis.filter((e) => e.id !== emojiId));
+  }
 
   function handleIconChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -145,7 +196,7 @@ export function ServerSettingsModal({
           <p className="text-text-muted text-xs font-semibold uppercase tracking-wide px-4 mb-2 truncate">
             {guild.name}
           </p>
-          {(["overview", "roles"] as Tab[]).map((t) => (
+          {(["overview", "roles", "emoji"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -371,6 +422,71 @@ export function ServerSettingsModal({
             )}
           </div>
         </div>
+        )}
+
+        {/* Emoji panel */}
+        {tab === "emoji" && (
+          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+            <h2 className="text-text-primary font-bold text-lg">Custom Emojis</h2>
+            <p className="text-text-muted text-sm -mt-4">
+              Use emojis in messages with <code className="bg-black/20 px-1 rounded">:name:</code> syntax.
+            </p>
+
+            {isOwner && (
+              <div className="flex flex-col gap-3 bg-black/10 rounded-lg p-4">
+                <p className="text-text-secondary text-sm font-semibold">Add Emoji</p>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-12 h-12 bg-black/20 rounded flex items-center justify-center cursor-pointer hover:bg-black/30 transition-colors shrink-0 overflow-hidden"
+                    onClick={() => emojiFileRef.current?.click()}
+                  >
+                    {emojiPreview
+                      ? <img src={emojiPreview} alt="preview" className="w-10 h-10 object-contain" />
+                      : <span className="text-text-muted text-2xl">+</span>}
+                  </div>
+                  <input ref={emojiFileRef} type="file" accept="image/*" className="hidden" onChange={handleEmojiFileChange} />
+                  <div className="flex-1 flex flex-col gap-1">
+                    <label className="text-text-muted text-xs uppercase tracking-wide font-semibold">Name</label>
+                    <input
+                      value={emojiName}
+                      onChange={(e) => setEmojiName(e.target.value)}
+                      placeholder="e.g. poggers"
+                      maxLength={32}
+                      className="bg-input-bg text-text-primary rounded px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-accent"
+                    />
+                  </div>
+                  <button
+                    onClick={handleAddEmoji}
+                    disabled={emojiLoading || !emojiFile || !emojiName.trim()}
+                    className="bg-accent hover:bg-accent-hover text-white text-sm font-semibold px-4 py-2 rounded transition-colors disabled:opacity-50 shrink-0"
+                  >
+                    {emojiLoading ? "Adding…" : "Add"}
+                  </button>
+                </div>
+                {emojiError && <p className="text-danger text-xs">{emojiError}</p>}
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1">
+              {customEmojis.length === 0 && (
+                <p className="text-text-muted text-sm">No custom emojis yet.</p>
+              )}
+              {customEmojis.map((emoji) => (
+                <div key={emoji.id} className="flex items-center gap-3 px-2 py-1.5 rounded hover:bg-white/5 group">
+                  <img src={emoji.image_url} alt={emoji.name} className="w-8 h-8 object-contain rounded" />
+                  <span className="text-text-primary text-sm font-medium flex-1">:{emoji.name}:</span>
+                  {isOwner && (
+                    <button
+                      onClick={() => handleDeleteEmoji(emoji.id)}
+                      className="text-text-muted hover:text-danger transition-colors opacity-0 group-hover:opacity-100 text-xs"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </div>
