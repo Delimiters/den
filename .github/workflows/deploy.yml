@@ -31,33 +31,20 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Build app
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
-      # For PRs, derive the Vercel preview URL from the branch name and wait for it.
-      # For pushes to main, use the production URL from vars.E2E_BASE_URL.
-      - name: Resolve target URL
-        id: target-url
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BRANCH="${{ github.head_ref }}"
-            SLUG=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
-            URL="https://den-git-${SLUG}-delimiters-projects.vercel.app"
-            echo "url=$URL" >> $GITHUB_OUTPUT
-            echo "Waiting for Vercel preview: $URL"
-            for i in $(seq 1 36); do
-              STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$URL" 2>/dev/null || echo "000")
-              if [ "$STATUS" = "200" ]; then
-                echo "Preview ready after ~$((i * 5))s"
-                break
-              fi
-              if [ "$i" = "36" ]; then
-                echo "Preview not ready after 3 minutes, proceeding anyway"
-              fi
-              sleep 5
-            done
-          else
-            echo "url=${{ vars.E2E_BASE_URL }}" >> $GITHUB_OUTPUT
-            echo "Using production URL: ${{ vars.E2E_BASE_URL }}"
-          fi
+      - name: Start preview server
+        run: npx vite preview --port 4173 &
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Wait for preview server
+        run: npx wait-on http://localhost:4173 --timeout 30000
 
       # Cache Playwright browser binaries keyed by the installed Playwright version
       - name: Get Playwright version
@@ -78,11 +65,9 @@ jobs:
       - name: Run e2e tests
         run: npm run test:e2e
         env:
-          E2E_BASE_URL: ${{ steps.target-url.outputs.url }}
+          E2E_BASE_URL: http://localhost:4173
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - uses: actions/upload-artifact@v4
         if: failure()
