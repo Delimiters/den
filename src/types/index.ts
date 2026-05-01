@@ -109,6 +109,15 @@ export interface DmAttachment {
   content_type: string;
 }
 
+export interface CustomEmoji {
+  id: string;
+  guild_id: string;
+  name: string;
+  image_url: string;
+  created_by: string | null;
+  created_at: string;
+}
+
 export interface DmMessage {
   id: string;
   dm_channel_id: string;
