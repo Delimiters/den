@@ -1,3 +1,4 @@
+import { useAppStore } from "../stores/appStore";
 import { openUrl } from "./tauri";
 
 type Segment =
@@ -7,11 +8,12 @@ type Segment =
   | { type: "strike"; value: string }
   | { type: "code"; value: string }
   | { type: "link"; value: string; url: string }
-  | { type: "mention"; value: string };
+  | { type: "mention"; value: string }
+  | { type: "emoji"; name: string; url: string };
 
-function parseInline(text: string): Segment[] {
+function parseInline(text: string, emojiMap?: Map<string, string>): Segment[] {
   // Apply patterns in priority order using a combined regex
-  const combined = /(`[^`]+`|~~[\s\S]+?~~|\*\*[\s\S]+?\*\*|(?<!\*)\*(?!\*)[\s\S]+?(?<!\*)\*(?!\*)|_[\s\S]+?_|https?:\/\/[^\s<>"']+[^\s<>"'.,;!?]|@\w+)/g;
+  const combined = /(`[^`]+`|~~[\s\S]+?~~|\*\*[\s\S]+?\*\*|(?<!\*)\*(?!\*)[\s\S]+?(?<!\*)\*(?!\*)|_[\s\S]+?_|https?:\/\/[^\s<>"']+[^\s<>"'.,;!?]|@\w+|:[a-z0-9_]{2,32}:)/g;
   const segments: Segment[] = [];
   let last = 0;
 
@@ -32,6 +34,14 @@ function parseInline(text: string): Segment[] {
       segments.push({ type: "link", value: raw, url: raw });
     } else if (raw.startsWith("@")) {
       segments.push({ type: "mention", value: raw.slice(1) });
+    } else if (raw.startsWith(":") && raw.endsWith(":")) {
+      const name = raw.slice(1, -1);
+      const url = emojiMap?.get(name);
+      if (url) {
+        segments.push({ type: "emoji", name, url });
+      } else {
+        segments.push({ type: "text", value: raw });
+      }
     }
     last = match.index! + raw.length;
   }
@@ -83,8 +93,18 @@ function renderSegments(segments: Segment[], key: string, currentUsername?: stri
           </span>
         );
       }
+      case "emoji":
+        return (
+          <img
+            key={k}
+            src={seg.url}
+            alt={`:${seg.name}:`}
+            title={`:${seg.name}:`}
+            className="inline-block w-5 h-5 object-contain align-middle mx-0.5"
+          />
+        );
       default:
-        return <span key={k}>{seg.value}</span>;
+        return <span key={k}>{(seg as { value: string }).value}</span>;
     }
   });
 }
@@ -96,6 +116,11 @@ interface MessageContentProps {
 }
 
 export function MessageContent({ content, className = "", currentUsername }: MessageContentProps) {
+  const customEmojis = useAppStore((s) => s.customEmojis);
+  const emojiMap = customEmojis.length > 0
+    ? new Map(customEmojis.map((e) => [e.name, e.image_url]))
+    : undefined;
+
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
   let i = 0;
@@ -124,7 +149,7 @@ export function MessageContent({ content, className = "", currentUsername }: Mes
     if (lines[i].startsWith("> ")) {
       elements.push(
         <blockquote key={i} className="border-l-4 border-text-muted pl-3 my-0.5 text-text-muted">
-          {renderSegments(parseInline(lines[i].slice(2)), `bq-${i}`, currentUsername)}
+          {renderSegments(parseInline(lines[i].slice(2), emojiMap), `bq-${i}`, currentUsername)}
         </blockquote>
       );
       i++;
@@ -142,7 +167,7 @@ export function MessageContent({ content, className = "", currentUsername }: Mes
         : "text-text-primary font-semibold text-base mt-1 mb-0.5";
       elements.push(
         <div key={i} className={cls}>
-          {renderSegments(parseInline(headingMatch[2]), `h-${i}`, currentUsername)}
+          {renderSegments(parseInline(headingMatch[2], emojiMap), `h-${i}`, currentUsername)}
         </div>
       );
       i++;
@@ -159,7 +184,7 @@ export function MessageContent({ content, className = "", currentUsername }: Mes
       elements.push(
         <ol key={i} className="list-decimal list-inside my-0.5 space-y-0.5 text-text-secondary">
           {listItems.map((item, j) => (
-            <li key={j}>{renderSegments(parseInline(item), `oli-${i}-${j}`, currentUsername)}</li>
+            <li key={j}>{renderSegments(parseInline(item, emojiMap), `oli-${i}-${j}`, currentUsername)}</li>
           ))}
         </ol>
       );
@@ -176,7 +201,7 @@ export function MessageContent({ content, className = "", currentUsername }: Mes
       elements.push(
         <ul key={i} className="list-disc list-inside my-0.5 space-y-0.5 text-text-secondary">
           {listItems.map((item, j) => (
-            <li key={j}>{renderSegments(parseInline(item), `li-${i}-${j}`, currentUsername)}</li>
+            <li key={j}>{renderSegments(parseInline(item, emojiMap), `li-${i}-${j}`, currentUsername)}</li>
           ))}
         </ul>
       );
@@ -184,7 +209,7 @@ export function MessageContent({ content, className = "", currentUsername }: Mes
     }
 
     // Normal line
-    const segs = parseInline(lines[i]);
+    const segs = parseInline(lines[i], emojiMap);
     elements.push(
       <span key={i}>
         {renderSegments(segs, `line-${i}`, currentUsername)}
