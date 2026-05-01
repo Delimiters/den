@@ -7,7 +7,7 @@ import type { Message } from "../types";
 const MSG_SELECT = "*, author:users!author_id(*), attachments(*), reply_to:messages!reply_to_id(id, content, author:users!author_id(id, username, display_name))";
 
 export function useRealtimeMessages(channelId: string | null) {
-  const { setMessages, appendMessage, updateMessage, removeMessage } = useAppStore();
+  const { setMessages, appendMessage, updateMessage, removeMessage, currentUser } = useAppStore();
   const subscriptionRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Load initial messages
@@ -91,6 +91,9 @@ export function useRealtimeMessages(channelId: string | null) {
       .single();
 
     if (!msg) return;
+
+    // Optimistically show the message immediately without waiting for realtime
+    appendMessage({ ...msg, author: currentUser ?? undefined } as Message);
 
     if (files?.length) {
       await Promise.all(

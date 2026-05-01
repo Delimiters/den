@@ -102,7 +102,11 @@ export const useAppStore = create<AppStore>((set) => ({
   prependMessages: (older) =>
     set((s) => ({ messages: [...s.messages, ...older] })),
   appendMessage: (message) =>
-    set((s) => ({ messages: [message, ...s.messages] })),
+    set((s) =>
+      s.messages.some((m) => m.id === message.id)
+        ? s
+        : { messages: [message, ...s.messages] }
+    ),
   updateMessage: (id, partial) =>
     set((s) => ({
       messages: s.messages.map((m) => (m.id === id ? { ...m, ...partial } : m)),
