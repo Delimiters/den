@@ -102,11 +102,17 @@ export const useAppStore = create<AppStore>((set) => ({
   prependMessages: (older) =>
     set((s) => ({ messages: [...s.messages, ...older] })),
   appendMessage: (message) =>
-    set((s) =>
-      s.messages.some((m) => m.id === message.id)
-        ? s
-        : { messages: [message, ...s.messages] }
-    ),
+    set((s) => {
+      const idx = s.messages.findIndex((m) => m.id === message.id);
+      if (idx === -1) return { messages: [message, ...s.messages] };
+      // Replace optimistic insert (no author) with realtime echo (has author)
+      if (!s.messages[idx].author && message.author) {
+        const next = [...s.messages];
+        next[idx] = message;
+        return { messages: next };
+      }
+      return s;
+    }),
   updateMessage: (id, partial) =>
     set((s) => ({
       messages: s.messages.map((m) => (m.id === id ? { ...m, ...partial } : m)),

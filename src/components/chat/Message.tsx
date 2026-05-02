@@ -294,7 +294,7 @@ export function Message({
 
   if (compact) {
     return (
-      <div className={`group relative flex items-start gap-4 px-4 py-1 hover:bg-msg-hover ${mentionsMe ? "border-l-2 border-accent/60 bg-accent/[0.04]" : ""}`}>
+      <div className={`group relative flex items-start gap-4 px-6 py-1 hover:bg-msg-hover ${mentionsMe ? "border-l-2 border-accent/60 bg-accent/[0.04]" : ""}`}>
         {actions}
         <span className="text-text-muted text-xs w-10 mt-0.5 text-right shrink-0 opacity-0 group-hover:opacity-100 transition-opacity leading-relaxed">
           {formatTimestamp(message.created_at, true)}
@@ -305,7 +305,7 @@ export function Message({
   }
 
   return (
-    <div className={`group relative flex items-start gap-4 px-4 py-3 hover:bg-msg-hover mt-1 ${mentionsMe ? "border-l-2 border-accent/60 bg-accent/[0.04]" : ""}`}>
+    <div className={`group relative flex items-start gap-4 px-6 py-3 hover:bg-msg-hover mt-1 ${mentionsMe ? "border-l-2 border-accent/60 bg-accent/[0.04]" : ""}`}>
       {lightboxSrc && (
         <ImageLightbox src={lightboxSrc.src} alt={lightboxSrc.alt} onClose={() => setLightboxSrc(null)} />
       )}

@@ -289,16 +289,16 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           </div>
         ) : hasContent ? (
           <>
-            <div className="h-14 px-5 flex items-center gap-3 border-b border-divider shrink-0 shadow-sm">
+            <div className="h-14 px-5 flex items-center gap-1.5 border-b border-divider shrink-0 shadow-sm">
               {isGuildMode ? (
                 <>
-                  <span className="text-text-muted font-bold text-lg">#</span>
-                  <h3 className="text-text-primary font-semibold text-sm">{channelName}</h3>
+                  <span className="text-text-muted font-bold text-xl">#</span>
+                  <h3 className="text-text-primary font-semibold text-base">{channelName}</h3>
                 </>
               ) : (
                 <>
-                  <span className="text-text-muted text-lg">@</span>
-                  <h3 className="text-text-primary font-semibold text-sm">{channelName}</h3>
+                  <span className="text-text-muted text-xl">@</span>
+                  <h3 className="text-text-primary font-semibold text-base">{channelName}</h3>
                 </>
               )}
               <div className="flex-1" />

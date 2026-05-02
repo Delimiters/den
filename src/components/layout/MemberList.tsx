@@ -192,7 +192,7 @@ function MemberSection({ label, members, currentUserId, onOpenDm, onContextMenu 
               </span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className={`text-sm font-medium truncate ${m.presence_status === "offline" ? "text-text-muted" : "text-text-secondary"}`}>
+              <p className={`text-base font-medium truncate ${m.presence_status === "offline" ? "text-text-muted" : "text-text-secondary"}`}>
                 {name}
               </p>
             </div>

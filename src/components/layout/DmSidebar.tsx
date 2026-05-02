@@ -28,9 +28,9 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
         <button
           onClick={() => setShowNewDm(true)}
           title="New message"
-          className="text-text-muted hover:text-text-primary transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-text-primary hover:bg-white/10 transition-colors"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19 3H5a2 2 0 00-2 2v14l4-4h12a2 2 0 002-2V5a2 2 0 00-2-2zm-7 12H8v-2h4v2zm4-4H8v-2h8v2zm0-4H8V5h8v2z"/>
             <path d="M20 2v4h4" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round"/>
           </svg>
@@ -73,7 +73,7 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between gap-1">
-                    <span className={`text-sm truncate ${hasUnread ? "text-text-primary font-semibold" : ""}`}>{name}</span>
+                    <span className={`text-base truncate ${hasUnread ? "text-text-primary font-semibold" : ""}`}>{name}</span>
                     {hasUnread && (
                       <span className="w-2 h-2 bg-white rounded-full shrink-0" />
                     )}
@@ -122,7 +122,7 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
           </p>
           <p className="text-text-muted text-xs truncate">@{currentUser.username}</p>
         </div>
-        <button onClick={onSignOut} title="Sign out" className="text-text-muted hover:text-danger transition-colors">
+        <button onClick={onSignOut} title="Sign out" className="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-danger hover:bg-white/10 transition-colors">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
             <path d="M16 13v-2H7V8l-5 4 5 4v-3h9z" />
             <path d="M20 3h-9c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H9v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
