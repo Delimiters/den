@@ -3,8 +3,9 @@ import { AuthPage } from "./components/auth/AuthPage";
 import { AppLayout } from "./components/layout/AppLayout";
 
 export default function App() {
-  const { currentUser, signOut } = useAuth();
+  const { currentUser, authReady, signOut } = useAuth();
 
+  if (!authReady) return null;
   if (!currentUser) return <AuthPage />;
   return <AppLayout currentUser={currentUser} onSignOut={signOut} />;
 }
