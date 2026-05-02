@@ -256,15 +256,15 @@ export function MessageInput({ channelName, onSend, onEdit, onTyping, replyingTo
         </div>
       )}
 
-      <div className={`bg-input-bg rounded-lg flex items-end gap-2 px-4 py-2.5 ${dragging ? "ring-2 ring-accent" : ""}`}>
-        {/* Attachment button */}
+      <div className={`bg-input-bg rounded-lg flex items-center gap-2 px-3 py-3 ${dragging ? "ring-2 ring-accent" : ""}`}>
+        {/* Add button */}
         <button
           onClick={() => fileRef.current?.click()}
-          className="text-text-muted hover:text-text-primary transition-colors pb-0.5 shrink-0"
-          title="Attach file"
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-text-muted hover:text-text-primary transition-colors shrink-0"
+          title="Add attachment"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 0 0 5 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z" />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
           </svg>
         </button>
         <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && addFiles(e.target.files)} />
@@ -310,10 +310,10 @@ export function MessageInput({ channelName, onSend, onEdit, onTyping, replyingTo
         <button
           onClick={submit}
           disabled={!canSend}
-          className="text-text-muted hover:text-text-primary disabled:opacity-30 transition-colors pb-0.5 shrink-0"
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-accent hover:bg-accent/80 disabled:opacity-30 disabled:bg-white/10 disabled:hover:bg-white/10 transition-colors shrink-0"
           title="Send message"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
           </svg>
         </button>

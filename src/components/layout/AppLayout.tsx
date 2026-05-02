@@ -303,26 +303,28 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               )}
               <div className="flex-1" />
               {/* Pinned messages button — guild text channels only */}
+              <div className="flex items-center gap-1">
               {isGuildMode && currentChannel?.type === "text" && (
                 <button
                   onClick={() => setShowPins((s) => !s)}
-                  className={`text-text-muted hover:text-text-primary transition-colors p-1.5 rounded hover:bg-msg-hover ${showPins ? "bg-msg-hover text-text-primary" : ""}`}
+                  className={`text-text-muted hover:text-text-primary transition-colors p-2 rounded hover:bg-msg-hover ${showPins ? "bg-msg-hover text-text-primary" : ""}`}
                   title="Pinned messages"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
                   </svg>
                 </button>
               )}
               <button
                 onClick={() => setShowSearch(true)}
-                className="text-text-muted hover:text-text-primary transition-colors p-1.5 rounded hover:bg-msg-hover"
+                className="text-text-muted hover:text-text-primary transition-colors p-2 rounded hover:bg-msg-hover"
                 title="Search messages (Ctrl+F)"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
                 </svg>
               </button>
+              </div>
             </div>
             {showSearch && channelId && (
               <MessageSearch
