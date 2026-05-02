@@ -236,12 +236,12 @@ Required repository secrets (Settings → Secrets and variables → Actions → 
 - [x] Voice channels with screen sharing (LiveKit)
 - [x] Desktop notifications
 - [x] Quick channel switcher (Ctrl+K)
-- [ ] @mentions and mention highlighting
-- [ ] Message search
-- [ ] Markdown rendering
-- [ ] Link previews / embeds
-- [ ] Custom per-server emojis
-- [ ] System tray + minimize to tray
+- [x] @mentions and mention highlighting
+- [x] Message search
+- [x] Markdown rendering (bold, italic, strikethrough, code blocks, lists, blockquotes, headings)
+- [x] Link previews / embeds
+- [x] Custom per-server emojis
+- [x] System tray + minimize to tray
 - [ ] Auto-update (Tauri updater)
 - [ ] Mobile (iOS / Android via Tauri 2.0)
 - [ ] Web client (browser, no desktop app required)
