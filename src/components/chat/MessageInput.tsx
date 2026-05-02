@@ -12,6 +12,7 @@ interface PendingFile {
 interface MessageInputProps {
   channelName: string;
   onSend: (content: string, files?: File[], replyToId?: string | null) => void;
+  onEdit?: (messageId: string, content: string) => void;
   onTyping?: () => void;
   replyingTo?: Message | null;
   onCancelReply?: () => void;
@@ -22,16 +23,20 @@ interface MentionState {
   startIndex: number;
 }
 
-export function MessageInput({ channelName, onSend, onTyping, replyingTo, onCancelReply }: MessageInputProps) {
+export function MessageInput({ channelName, onSend, onEdit, onTyping, replyingTo, onCancelReply }: MessageInputProps) {
   const [content, setContent] = useState("");
   const [pending, setPending] = useState<PendingFile[]>([]);
   const [dragging, setDragging] = useState(false);
   const [mentionState, setMentionState] = useState<MentionState | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingOriginal, setEditingOriginal] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const members = useAppStore((s) => s.members);
+  const messages = useAppStore((s) => s.messages);
+  const currentUser = useAppStore((s) => s.currentUser);
 
   const mentionCandidates = mentionState
     ? members
@@ -118,14 +123,46 @@ export function MessageInput({ channelName, onSend, onTyping, replyingTo, onCanc
         return;
       }
     }
+    if (e.key === "ArrowUp" && !content && onEdit && currentUser && !editingMessageId) {
+      const lastOwn = messages.find((m) => m.author_id === currentUser.id && !m.deleted_at);
+      if (lastOwn) {
+        e.preventDefault();
+        setEditingMessageId(lastOwn.id);
+        setEditingOriginal(lastOwn.content);
+        setContent(lastOwn.content);
+        requestAnimationFrame(() => {
+          const el = textareaRef.current;
+          if (!el) return;
+          el.focus();
+          el.setSelectionRange(el.value.length, el.value.length);
+        });
+        return;
+      }
+    }
+    if (e.key === "Escape" && editingMessageId) {
+      cancelEdit();
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       submit();
     }
   }
 
+  function cancelEdit() {
+    setEditingMessageId(null);
+    setEditingOriginal("");
+    setContent("");
+    setMentionState(null);
+  }
+
   function submit() {
     const trimmed = content.trim();
+    if (editingMessageId) {
+      if (trimmed && trimmed !== editingOriginal) onEdit?.(editingMessageId, trimmed);
+      cancelEdit();
+      return;
+    }
     if (!trimmed && pending.length === 0) return;
     onSend(trimmed, pending.map((p) => p.file), replyingTo?.id ?? null);
     onCancelReply?.();
@@ -150,6 +187,24 @@ export function MessageInput({ channelName, onSend, onTyping, replyingTo, onCanc
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
     >
+      {/* Edit mode indicator */}
+      {editingMessageId && (
+        <div className="flex items-center gap-2 bg-input-bg rounded-t-lg px-4 py-2 border-b border-divider/50 -mb-1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-accent shrink-0">
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+          </svg>
+          <span className="text-accent text-xs font-medium">Editing message</span>
+          <span className="text-text-muted text-xs truncate flex-1 italic">
+            {editingOriginal.slice(0, 80)}{editingOriginal.length > 80 ? "…" : ""}
+          </span>
+          <button
+            onClick={cancelEdit}
+            className="text-text-muted hover:text-text-primary shrink-0 text-sm leading-none"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {/* Reply context bar */}
       {replyingTo && (
         <div className="flex items-center gap-2 bg-input-bg rounded-t-lg px-4 py-2 border-b border-divider/50 -mb-1">
