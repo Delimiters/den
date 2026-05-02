@@ -260,10 +260,10 @@ export function MessageInput({ channelName, onSend, onEdit, onTyping, replyingTo
         {/* Add button */}
         <button
           onClick={() => fileRef.current?.click()}
-          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-text-muted hover:text-text-primary transition-colors shrink-0"
+          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/15 text-text-muted hover:text-text-primary transition-colors shrink-0"
           title="Add attachment"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
           </svg>
         </button>
