@@ -29,7 +29,7 @@ export function GuildSidebar({
 
   return (
     <>
-      <div className="w-18 bg-guild-rail flex flex-col items-center py-3 gap-2 shrink-0 overflow-y-auto">
+      <div className="w-18 bg-guild-rail flex flex-col items-center py-4 gap-3 shrink-0 overflow-y-auto">
         {/* DM home button */}
         <button
           onClick={onOpenDms}

@@ -81,7 +81,7 @@ export function ChannelSidebar({
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
       {/* Guild header */}
-      <div className="h-12 px-4 flex items-center justify-between border-b border-divider shadow-sm shrink-0 gap-2">
+      <div className="h-14 px-4 flex items-center justify-between border-b border-divider shadow-sm shrink-0 gap-2">
         <h2 className="text-text-primary font-bold text-base truncate">
           {guild?.name ?? "Select a server"}
         </h2>
@@ -114,7 +114,7 @@ export function ChannelSidebar({
       </div>
 
       {/* Channel list */}
-      <div className="flex-1 overflow-y-auto px-2 py-3">
+      <div className="flex-1 overflow-y-auto px-2 py-4">
         {guild && (
           <>
             {hasCategories ? (
@@ -143,7 +143,7 @@ export function ChannelSidebar({
                           {ch.type === "voice" && participants.map((s) => {
                             const name = (s.user as any)?.display_name || (s.user as any)?.username || "Unknown";
                             return (
-                              <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-0.5">
+                              <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-1">
                                 <Avatar src={(s.user as any)?.avatar_url ?? null} name={name} size={14} />
                                 <span className="text-text-muted text-sm truncate">{name}</span>
                               </div>
@@ -188,7 +188,7 @@ export function ChannelSidebar({
                           {participants.map((s) => {
                             const name = (s.user as any)?.display_name || (s.user as any)?.username || "Unknown";
                             return (
-                              <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-0.5">
+                              <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-1">
                                 <Avatar src={(s.user as any)?.avatar_url ?? null} name={name} size={14} />
                                 <span className="text-text-muted text-sm truncate">{name}</span>
                               </div>
@@ -209,7 +209,7 @@ export function ChannelSidebar({
       <div ref={voicePanelRef} />
 
       {/* User panel */}
-      <div className="h-14 bg-overlay px-3 flex items-center gap-2 shrink-0 relative">
+      <div className="h-16 bg-overlay px-4 flex items-center gap-3 shrink-0 relative">
         {/* Status picker popover */}
         {showStatusMenu && (
           <div
@@ -306,7 +306,7 @@ function ChannelSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-4">
+    <div className="mb-5">
       <div className="flex items-center justify-between px-2 mb-1 group">
         <span className="text-text-muted text-xs font-semibold uppercase tracking-wide">
           {label}
@@ -350,7 +350,7 @@ function ChannelRow({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors group ${
+      className={`w-full flex items-center gap-2 px-3 py-2.5 rounded text-sm transition-colors group ${
         active
           ? "bg-white/[0.12] text-text-primary"
           : unread

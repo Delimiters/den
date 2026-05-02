@@ -23,7 +23,7 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
       {/* Header */}
-      <div className="h-12 px-4 flex items-center justify-between border-b border-divider shadow-sm shrink-0">
+      <div className="h-14 px-4 flex items-center justify-between border-b border-divider shadow-sm shrink-0">
         <h2 className="text-text-primary font-bold text-base">Direct Messages</h2>
         <button
           onClick={() => setShowNewDm(true)}
@@ -46,7 +46,7 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
       )}
 
       {/* DM list */}
-      <div className="flex-1 overflow-y-auto px-2 py-3">
+      <div className="flex-1 overflow-y-auto px-2 py-4">
         {dmChannels.length === 0 ? (
           <p className="text-text-muted text-xs px-3 py-2">No conversations yet.<br />Click a member to start one.</p>
         ) : (
@@ -59,7 +59,7 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
               <button
                 key={dm.id}
                 onClick={() => onDmSelect(dm.id)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded transition-colors ${
                   dm.id === currentDmId
                     ? "bg-white/[0.12] text-text-primary"
                     : "text-text-muted hover:bg-white/[0.06] hover:text-text-secondary"
@@ -91,7 +91,7 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
       </div>
 
       {/* User panel */}
-      <div className="h-14 bg-overlay px-3 flex items-center gap-2 shrink-0 relative">
+      <div className="h-16 bg-overlay px-4 flex items-center gap-3 shrink-0 relative">
         {showStatusMenu && (
           <div
             ref={statusMenuRef}

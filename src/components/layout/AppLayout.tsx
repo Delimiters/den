@@ -289,7 +289,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           </div>
         ) : hasContent ? (
           <>
-            <div className="h-12 px-4 flex items-center gap-2 border-b border-divider shrink-0 shadow-sm">
+            <div className="h-14 px-5 flex items-center gap-3 border-b border-divider shrink-0 shadow-sm">
               {isGuildMode ? (
                 <>
                   <span className="text-text-muted font-bold text-lg">#</span>
