@@ -85,18 +85,20 @@ npm install
 ```
 supabase/migrations/001_initial_schema.sql
 supabase/fixes/001_fix_guild_members_rls.sql
-supabase/fixes/002_reactions.sql
-supabase/fixes/003_invite_links.sql
-supabase/fixes/004_avatar_storage.sql
-supabase/fixes/005_roles_permissions.sql
-supabase/fixes/006_dm_tables.sql
+supabase/fixes/002_message_reactions_rls.sql
+supabase/fixes/003_avatars_storage_bucket.sql
+supabase/fixes/004_guild_invites_table.sql
+supabase/fixes/005_rls_hardening.sql
+supabase/fixes/006_dm_rls_and_functions.sql
+supabase/fixes/006b_dm_tables_and_rls.sql
 supabase/fixes/007_attachments_storage.sql
-supabase/fixes/008_dm_attachments.sql
-supabase/fixes/009_custom_emojis.sql
+supabase/fixes/009_roles_and_permissions.sql
 supabase/fixes/010_voice_sessions.sql
-supabase/fixes/011_guild_invites_rls.sql
+supabase/fixes/011_dm_attachments.sql
 supabase/fixes/012_message_replies.sql
 supabase/fixes/013_pinned_messages.sql
+supabase/fixes/014_voice_sessions_replica_identity.sql
+supabase/fixes/015_custom_emojis.sql
 ```
 
 3. In **Storage**, create a public bucket named `avatars`
@@ -115,7 +117,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 Your Supabase URL and anon key are in **Project Settings → API**. The anon key is safe to expose to the client — Row Level Security enforces access at the database layer.
 
-### 4. Deploy Edge Functions (voice + file uploads)
+### 4. Deploy Edge Functions
 
 Install the [Supabase CLI](https://supabase.com/docs/guides/cli):
 
@@ -146,6 +148,7 @@ Deploy:
 ```bash
 supabase functions deploy upload-url --no-verify-jwt
 supabase functions deploy livekit-token --no-verify-jwt
+supabase functions deploy link-preview --no-verify-jwt
 ```
 
 ### 5. Run
