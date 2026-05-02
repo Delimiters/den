@@ -357,6 +357,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
             <MessageInput
               channelName={channelName}
               onSend={sendFn}
+              onEdit={editFn}
               onTyping={sendTyping}
               replyingTo={replyingTo}
               onCancelReply={() => setReplyingTo(null)}
