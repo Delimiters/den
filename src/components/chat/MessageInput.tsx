@@ -263,8 +263,8 @@ export function MessageInput({ channelName, onSend, onEdit, onTyping, replyingTo
           className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/15 text-text-muted hover:text-text-primary transition-colors shrink-0"
           title="Add attachment"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14"/>
           </svg>
         </button>
         <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && addFiles(e.target.files)} />
