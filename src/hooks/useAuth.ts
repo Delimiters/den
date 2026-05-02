@@ -1,16 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAppStore } from "../stores/appStore";
 import type { User } from "../types";
 
 export function useAuth() {
   const { currentUser, setCurrentUser } = useAppStore();
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    // Load initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        fetchUser(session.user.id);
+        fetchUser(session.user.id).then(() => setAuthReady(true));
+      } else {
+        setAuthReady(true);
       }
     });
 
@@ -60,5 +62,5 @@ export function useAuth() {
     await supabase.auth.signOut();
   }
 
-  return { currentUser, signUp, signIn, signOut };
+  return { currentUser, authReady, signUp, signIn, signOut };
 }

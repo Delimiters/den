@@ -26,7 +26,7 @@ The initial audience is a Windows gaming friend group. Mobile (iOS/Android) is p
 | File storage | Cloudflare R2 | 10 GB/month free, zero egress fees |
 | Build | Vite 7 | Frontend only; Tauri CLI wraps it |
 | Tests | Vitest + React Testing Library | Vite-native, globals enabled |
-| E2E | Playwright | Smoke tests against Vercel preview URL on every PR |
+| E2E | Playwright | Smoke tests; CI builds app locally and tests against localhost:4173 |
 
 ## Commands
 
@@ -56,8 +56,10 @@ src/
 │   └── voice/        # VoiceChannelView, VoiceControls, VoiceStatusPanel, ParticipantTile
 ├── hooks/
 │   ├── useAuth.ts              # Session management, sign-in/up/out
+│   ├── useCustomEmojis.ts      # Loads per-guild custom emojis into store
 │   ├── useDirectMessages.ts    # DM load + realtime subscription + send
 │   ├── useDmUnreadTracker.ts   # Unread tracking for DM channels
+│   ├── useLinkPreview.ts       # Fetches OG metadata via link-preview Edge Function; in-memory cache
 │   ├── usePresence.ts          # Supabase Presence (online/idle/dnd/offline)
 │   ├── useReactions.ts         # Emoji reaction load + realtime + toggle
 │   ├── useRealtimeMessages.ts  # Guild message load + realtime + send (optimistic)
@@ -250,11 +252,12 @@ Do not hardcode hex colors in component className strings.
 - **Quick switcher**: Ctrl+K to jump channels/DMs
 - **Desktop notifications**: native OS notifications for @mentions and DMs
 - **System tray**: minimize to tray on close (Tauri desktop only); left-click tray icon toggles window
-- **E2E tests**: Playwright smoke test (login → server → channel → message) runs against Vercel preview per PR
+- **Custom emojis**: per-server emoji upload (`:name:` syntax), rendered inline; managed in Server Settings → Emojis tab; picker has Server Emojis tab
+- **Link previews**: OG metadata fetched via `link-preview` Edge Function; compact card (site name, title, description, thumbnail) shown below messages with URLs
+- **Up-arrow edit**: press Up in an empty input to edit the last sent message; shows "Editing message" indicator; Enter saves, Escape cancels
+- **E2E tests**: Playwright smoke test (login → server → channel → message) builds app locally and tests against `localhost:4173` — no Vercel dependency
 
 ## What's next
 
-- Custom per-server emojis (`:emoji_name:` syntax)
-- Link previews / embeds (OG metadata)
 - Auto-update (Tauri updater)
 - Mobile (iOS / Android via Tauri 2.0)
