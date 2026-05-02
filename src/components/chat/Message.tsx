@@ -114,7 +114,7 @@ export function Message({
         {message.reply_to.author?.display_name || message.reply_to.author?.username || "Unknown"}
       </span>
       <span className="truncate max-w-xs opacity-80">
-        {message.reply_to.content.slice(0, 100)}{message.reply_to.content.length > 100 ? "…" : ""}
+        {(message.reply_to.content || "").slice(0, 100)}{(message.reply_to.content || "").length > 100 ? "…" : ""}
       </span>
     </div>
   ) : null;
