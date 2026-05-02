@@ -247,7 +247,7 @@ Required repository secrets (Settings → Secrets and variables → Actions → 
 - [x] System tray + minimize to tray
 - [ ] Auto-update (Tauri updater)
 - [ ] Mobile (iOS / Android via Tauri 2.0)
-- [ ] Web client (browser, no desktop app required)
+- [ ] Permanent web hosting — the app already runs in any browser; needs a production Vercel deployment with a custom domain and stable env vars
 
 ---
 
