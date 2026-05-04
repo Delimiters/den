@@ -81,7 +81,7 @@ export function ChannelSidebar({
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
       {/* Guild header */}
-      <div className="h-12 px-4 flex items-center justify-between border-b border-divider shadow-sm shrink-0 gap-2">
+      <div className="h-14 px-4 flex items-center justify-between border-b border-divider shadow-sm shrink-0 gap-2">
         <h2 className="text-text-primary font-bold text-base truncate">
           {guild?.name ?? "Select a server"}
         </h2>
@@ -89,10 +89,10 @@ export function ChannelSidebar({
           <div className="flex items-center gap-1">
             <button
               onClick={() => setShowInvite(true)}
-              className="text-text-muted hover:text-text-primary transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-text-primary hover:bg-white/10 transition-colors"
               title="Invite people"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm-1 0a2 2 0 11-4 0 2 2 0 014 0z" />
                 <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 8a8 8 0 100-16 8 8 0 000 16z" />
                 <path d="M12 6v6m0 0v6m0-6h6m-6 0H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" />
@@ -101,10 +101,10 @@ export function ChannelSidebar({
             {onOpenServerSettings && (
               <button
                 onClick={onOpenServerSettings}
-                className="text-text-muted hover:text-text-primary transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-text-primary hover:bg-white/10 transition-colors"
                 title="Server settings"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
                 </svg>
               </button>
@@ -143,7 +143,7 @@ export function ChannelSidebar({
                           {ch.type === "voice" && participants.map((s) => {
                             const name = (s.user as any)?.display_name || (s.user as any)?.username || "Unknown";
                             return (
-                              <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-0.5">
+                              <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-2">
                                 <Avatar src={(s.user as any)?.avatar_url ?? null} name={name} size={14} />
                                 <span className="text-text-muted text-sm truncate">{name}</span>
                               </div>
@@ -188,7 +188,7 @@ export function ChannelSidebar({
                           {participants.map((s) => {
                             const name = (s.user as any)?.display_name || (s.user as any)?.username || "Unknown";
                             return (
-                              <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-0.5">
+                              <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-2">
                                 <Avatar src={(s.user as any)?.avatar_url ?? null} name={name} size={14} />
                                 <span className="text-text-muted text-sm truncate">{name}</span>
                               </div>
@@ -209,7 +209,7 @@ export function ChannelSidebar({
       <div ref={voicePanelRef} />
 
       {/* User panel */}
-      <div className="h-14 bg-overlay px-3 flex items-center gap-2 shrink-0 relative">
+      <div className="h-16 bg-overlay px-4 flex items-center gap-3 shrink-0 relative">
         {/* Status picker popover */}
         {showStatusMenu && (
           <div
@@ -220,7 +220,7 @@ export function ChannelSidebar({
               <button
                 key={s}
                 onClick={() => { onStatusChange(s); setShowStatusMenu(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-msg-hover transition-colors ${userStatus === s ? "text-text-primary" : "text-text-secondary"}`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 text-base hover:bg-msg-hover transition-colors ${userStatus === s ? "text-text-primary" : "text-text-secondary"}`}
               >
                 <StatusIndicator status={s} size={10} />
                 <span className="capitalize">{s === "dnd" ? "Do Not Disturb" : s}</span>
@@ -240,26 +240,26 @@ export function ChannelSidebar({
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-text-primary text-sm font-semibold truncate">
+          <p className="text-text-primary text-base font-semibold truncate">
             {currentUser.display_name || currentUser.username}
           </p>
-          <p className="text-text-muted text-xs truncate">@{currentUser.username}</p>
+          <p className="text-text-muted text-sm truncate">@{currentUser.username}</p>
         </div>
         <button
           onClick={() => setShowSettings(true)}
           title="User settings"
-          className="text-text-muted hover:text-text-primary transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-text-primary hover:bg-white/10 transition-colors"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.07 7.07 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
           </svg>
         </button>
         <button
           onClick={onSignOut}
           title="Sign out"
-          className="text-text-muted hover:text-danger transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-danger hover:bg-white/10 transition-colors"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M16 13v-2H7V8l-5 4 5 4v-3h9z" />
             <path d="M20 3h-9c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H9v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
           </svg>
@@ -307,7 +307,7 @@ function ChannelSection({
 }) {
   return (
     <div className="mb-4">
-      <div className="flex items-center justify-between px-2 mb-1 group">
+      <div className="flex items-center justify-between px-2 mb-2 group">
         <span className="text-text-muted text-xs font-semibold uppercase tracking-wide">
           {label}
         </span>
@@ -350,7 +350,7 @@ function ChannelRow({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors group ${
+      className={`w-full flex items-center gap-2 px-4 py-2.5 rounded text-base transition-colors group ${
         active
           ? "bg-white/[0.12] text-text-primary"
           : unread
