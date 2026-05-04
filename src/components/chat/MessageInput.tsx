@@ -182,14 +182,14 @@ export function MessageInput({ channelName, onSend, onEdit, onTyping, replyingTo
 
   return (
     <div
-      className={`px-4 pb-6 pt-2 shrink-0 transition-colors ${dragging ? "bg-accent/10" : ""}`}
+      className={`px-4 pb-6 pt-4 shrink-0 transition-colors ${dragging ? "bg-accent/10" : ""}`}
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
     >
       {/* Edit mode indicator */}
       {editingMessageId && (
-        <div className="flex items-center gap-2 bg-input-bg rounded-t-lg px-4 py-2 border-b border-divider/50 -mb-1">
+        <div className="flex items-center gap-2 bg-input-bg rounded-t-lg px-4 py-3 border-b border-divider/50 -mb-1">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-accent shrink-0">
             <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
           </svg>
@@ -207,7 +207,7 @@ export function MessageInput({ channelName, onSend, onEdit, onTyping, replyingTo
       )}
       {/* Reply context bar */}
       {replyingTo && (
-        <div className="flex items-center gap-2 bg-input-bg rounded-t-lg px-4 py-2 border-b border-divider/50 -mb-1">
+        <div className="flex items-center gap-2 bg-input-bg rounded-t-lg px-4 py-3 border-b border-divider/50 -mb-1">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted shrink-0">
             <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" />
           </svg>
@@ -256,7 +256,7 @@ export function MessageInput({ channelName, onSend, onEdit, onTyping, replyingTo
         </div>
       )}
 
-      <div className={`bg-input-bg rounded-lg flex items-center gap-2 px-3 py-3 ${dragging ? "ring-2 ring-accent" : ""}`}>
+      <div className={`bg-input-bg rounded-lg flex items-center gap-2 px-4 py-3.5 ${dragging ? "ring-2 ring-accent" : ""}`}>
         {/* Add button */}
         <button
           onClick={() => fileRef.current?.click()}
@@ -277,7 +277,7 @@ export function MessageInput({ channelName, onSend, onEdit, onTyping, replyingTo
                 <button
                   key={m.user!.id}
                   onMouseDown={(e) => { e.preventDefault(); completeMention(m.user!.username); }}
-                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${i === mentionIndex ? "bg-accent/20" : "hover:bg-msg-hover"}`}
+                  className={`w-full flex items-center gap-2 px-3 py-2.5 text-left transition-colors ${i === mentionIndex ? "bg-accent/20" : "hover:bg-msg-hover"}`}
                 >
                   <Avatar src={m.user!.avatar_url} name={m.user!.display_name || m.user!.username} size={16} />
                   <span className="text-text-primary text-sm font-medium">{m.user!.display_name || m.user!.username}</span>
