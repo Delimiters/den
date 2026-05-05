@@ -15,6 +15,15 @@ jobs:
         include:
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
+            rust-targets: x86_64-pc-windows-msvc
+
+          - platform: macos-latest
+            target: universal-apple-darwin
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            rust-targets: x86_64-unknown-linux-gnu
 
     runs-on: ${{ matrix.platform }}
 
@@ -29,12 +38,22 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.rust-targets }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
+
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
 
       - name: Install frontend dependencies
         run: npm ci
@@ -50,7 +69,16 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Den ${{ github.ref_name }}'
-          releaseBody: 'See the assets below to download and install this version.'
+          releaseBody: |
+            ## Download
+
+            | Platform | Installer |
+            |----------|-----------|
+            | Windows | `Den_x.x.x_x64-setup.exe` |
+            | macOS (Apple Silicon + Intel) | `Den_x.x.x_universal.dmg` |
+            | Linux | `den_x.x.x_amd64.AppImage` or `den_x.x.x_amd64.deb` |
+
+            Download the file for your OS from the assets below.
           releaseDraft: false
           prerelease: false
           args: --target ${{ matrix.target }}
