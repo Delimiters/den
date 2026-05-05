@@ -79,6 +79,11 @@ jobs:
             | Linux | `den_x.x.x_amd64.AppImage` or `den_x.x.x_amd64.deb` |
 
             Download the file for your OS from the assets below.
+
+            > **Note:** These pre-built installers connect to the official Den servers.
+            > If you want to run your own backend (self-hosted Supabase, LiveKit, etc.),
+            > you'll need to clone the repo, add your own `.env.local`, and build from source.
+            > See the [README](https://github.com/Delimiters/den#readme) for instructions.
           releaseDraft: false
           prerelease: false
           args: --target ${{ matrix.target }}
