@@ -27,9 +27,9 @@ import { requestNotificationPermission, notify } from "../../utils/desktopNotifi
 import { QuickSwitcher } from "../ui/QuickSwitcher";
 import type { User, Guild, Channel } from "../../types";
 
-// Lazy-load LiveKit — ~500KB chunk only loaded when entering a voice channel
-const VoiceChannelView = lazy(() =>
-  import("../voice/VoiceChannelView").then((m) => ({ default: m.VoiceChannelView }))
+// Lazy-load LiveKit — only pulled in when a voice channel is active
+const VoiceConnection = lazy(() =>
+  import("../voice/VoiceChannelView").then((m) => ({ default: m.VoiceConnection }))
 );
 
 interface AppLayoutProps {
@@ -236,7 +236,15 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           unread={unread}
           canManageChannels={hasPermission(myPermissions, Permissions.MANAGE_CHANNELS)}
           voicePanelRef={voicePanelRef}
-          onChannelSelect={(id) => setCurrentChannel(id)}
+          onChannelSelect={(id) => {
+            const ch = channels.find((c) => c.id === id);
+            if (ch?.type === "voice") {
+              // Join voice in-place — don't navigate away from the current text channel
+              if (currentGuildId) joinVoice(id, currentGuildId);
+            } else {
+              setCurrentChannel(id);
+            }
+          }}
           onChannelsRefresh={() => currentGuildId && loadChannels(currentGuildId)}
           onStatusChange={setUserStatus}
           onSignOut={onSignOut}
@@ -258,36 +266,22 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Voice channel view — replaces chat area when a voice channel is selected */}
-        {isGuildMode && currentChannel?.type === "voice" && voiceChannelId === currentChannel.id && voiceToken && voiceLivekitUrl ? (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center"><p className="text-text-muted">Connecting…</p></div>}>
-            <VoiceChannelView
-              token={voiceToken}
-              livekitUrl={voiceLivekitUrl}
-              channel={currentChannel}
-              currentUserId={currentUser.id}
-              voicePanelRef={voicePanelRef}
-              onLeave={leaveVoice}
-            />
-          </Suspense>
-        ) : isGuildMode && currentChannel?.type === "voice" ? (
-          /* Voice channel join screen */
-          <div className="flex-1 flex flex-col items-center justify-center gap-4">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted">
-              <path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z" />
-            </svg>
-            <div className="text-center">
-              <h3 className="text-text-primary font-semibold text-lg">{currentChannel.name}</h3>
-              <p className="text-text-muted text-sm mt-1">Voice Channel</p>
-            </div>
-            <button
-              onClick={() => currentGuildId && joinVoice(currentChannel.id, currentGuildId)}
-              className="bg-accent hover:bg-accent-hover text-white font-semibold px-8 py-3 rounded-lg transition-colors"
-            >
-              Join Voice
-            </button>
-          </div>
-        ) : hasContent ? (
+        {/* Voice connection — keeps LiveKit audio alive while text chat stays visible */}
+        {isGuildMode && voiceChannelId && voiceToken && voiceLivekitUrl && (() => {
+          const voiceCh = channels.find((c) => c.id === voiceChannelId);
+          return voiceCh ? (
+            <Suspense fallback={null}>
+              <VoiceConnection
+                token={voiceToken}
+                livekitUrl={voiceLivekitUrl}
+                channel={voiceCh}
+                voicePanelRef={voicePanelRef}
+                onLeave={leaveVoice}
+              />
+            </Suspense>
+          ) : null;
+        })()}
+        {hasContent ? (
           <>
             <div className="h-14 pl-8 pr-3 flex items-center gap-1.5 border-b border-divider shrink-0 shadow-sm">
               {isGuildMode ? (
