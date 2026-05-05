@@ -54,6 +54,8 @@ fn setup_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             setup_tray(app.handle())?;
 
@@ -66,6 +68,23 @@ pub fn run() {
                     let _ = window_clone.hide();
                 }
             });
+
+            // Check for updates in the background
+            #[cfg(not(debug_assertions))]
+            {
+                let handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Ok(updater) = handle.updater() {
+                        if let Ok(Some(update)) = updater.check().await {
+                            if let Err(e) = update.download_and_install(|_, _| {}, || {}).await {
+                                eprintln!("Update install failed: {e}");
+                            } else {
+                                handle.restart();
+                            }
+                        }
+                    }
+                });
+            }
 
             Ok(())
         })
