@@ -139,32 +139,21 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
       </button>
     )}
     <div ref={scrollRef} className="flex-1 flex flex-col overflow-y-auto" onScroll={handleScroll}>
-      <div className="px-8 pt-12 pb-6">
-        <div className="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center mb-5 shrink-0">
-          {isDm ? (
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" className="text-accent">
-              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
-            </svg>
-          ) : (
-            <span className="text-accent text-2xl font-black leading-none">#</span>
-          )}
-        </div>
+      <div className="px-8 pt-16 pb-4">
         {isDm ? (
           <>
-            <h3 className="text-text-primary text-2xl font-bold">
-              {channelName}
-            </h3>
-            <p className="text-text-muted text-base mt-2">
-              This is the beginning of your conversation with {channelName}.
+            <p className="text-text-primary text-3xl font-bold leading-snug">Welcome,</p>
+            <p className="text-text-primary text-4xl font-extrabold leading-tight">{channelName}</p>
+            <p className="text-text-muted text-base mt-3">
+              This is the beginning of your direct message history with <span className="font-semibold text-text-secondary">{channelName}</span>.
             </p>
           </>
         ) : (
           <>
-            <h3 className="text-text-primary text-2xl font-bold">
-              Welcome to #{channelName}!
-            </h3>
-            <p className="text-text-muted text-base mt-2">
-              This is the start of the #{channelName} channel.
+            <p className="text-text-primary text-3xl font-bold leading-snug">Welcome to</p>
+            <p className="text-text-primary text-4xl font-extrabold leading-tight">#{channelName}!</p>
+            <p className="text-text-muted text-base mt-3">
+              This is the very beginning of the <span className="font-semibold text-text-secondary">#{channelName}</span> channel.
             </p>
           </>
         )}

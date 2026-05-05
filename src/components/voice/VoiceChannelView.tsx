@@ -20,6 +20,31 @@ interface VoiceChannelViewProps {
   onLeave: () => void;
 }
 
+/** Minimal mount that keeps the LiveKit room connected and portals the sidebar status panel. */
+export function VoiceConnection({ token, livekitUrl, channel, voicePanelRef, onLeave }: Omit<VoiceChannelViewProps, "currentUserId">) {
+  const onLeaveRef = useRef(onLeave);
+  onLeaveRef.current = onLeave;
+  useEffect(() => { return () => { onLeaveRef.current(); }; }, []);
+
+  return (
+    <LiveKitRoom
+      token={token}
+      serverUrl={livekitUrl}
+      connect={true}
+      options={{ disconnectOnPageLeave: true }}
+      onDisconnected={onLeave}
+    >
+      <RoomAudioRenderer />
+      <VoiceSidebarPortal channelName={channel.name} voicePanelRef={voicePanelRef} onLeave={onLeave} />
+    </LiveKitRoom>
+  );
+}
+
+function VoiceSidebarPortal({ channelName, voicePanelRef, onLeave }: { channelName: string; voicePanelRef: React.RefObject<HTMLDivElement | null>; onLeave: () => void }) {
+  if (!voicePanelRef.current) return null;
+  return createPortal(<VoiceStatusPanel channelName={channelName} onLeave={onLeave} />, voicePanelRef.current);
+}
+
 export function VoiceChannelView({ token, livekitUrl, channel, currentUserId, voicePanelRef, onLeave }: VoiceChannelViewProps) {
   const onLeaveRef = useRef(onLeave);
   onLeaveRef.current = onLeave;
