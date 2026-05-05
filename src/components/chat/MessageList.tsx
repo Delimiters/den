@@ -139,16 +139,22 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
       </button>
     )}
     <div ref={scrollRef} className="flex-1 flex flex-col overflow-y-auto" onScroll={handleScroll}>
-      <div className="px-6 pt-10 pb-4">
-        <div className="w-16 h-16 rounded-full bg-sidebar flex items-center justify-center text-3xl mb-4">
-          {isDm ? "💬" : "#"}
+      <div className="px-8 pt-12 pb-6">
+        <div className="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center mb-5 shrink-0">
+          {isDm ? (
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" className="text-accent">
+              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+            </svg>
+          ) : (
+            <span className="text-accent text-2xl font-black leading-none">#</span>
+          )}
         </div>
         {isDm ? (
           <>
             <h3 className="text-text-primary text-2xl font-bold">
               {channelName}
             </h3>
-            <p className="text-text-muted text-base mt-1">
+            <p className="text-text-muted text-base mt-2">
               This is the beginning of your conversation with {channelName}.
             </p>
           </>
@@ -157,20 +163,20 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
             <h3 className="text-text-primary text-2xl font-bold">
               Welcome to #{channelName}!
             </h3>
-            <p className="text-text-muted text-base mt-1">
+            <p className="text-text-muted text-base mt-2">
               This is the start of the #{channelName} channel.
             </p>
           </>
         )}
       </div>
 
-      <div className="border-t border-divider mx-6 mb-4" />
+      <div className="border-t border-divider mx-8 mb-4" />
 
       <div className="flex flex-col pb-4">
         {ordered.map((msg, i) => (
           <div key={msg.id}>
             {isDifferentDay(msg, ordered[i - 1]) && (
-              <div className="flex items-center gap-3 px-4 my-3">
+              <div className="flex items-center gap-3 px-8 my-4">
                 <div className="flex-1 h-px bg-divider" />
                 <span className="text-text-muted text-sm font-medium shrink-0">
                   {formatDateLabel(msg.created_at)}

@@ -106,7 +106,7 @@ export function Message({
   );
 
   const replyBlock = message.reply_to ? (
-    <div className="flex items-center gap-2 mb-1 text-xs text-text-muted">
+    <div className="flex items-center gap-2 mb-1.5 text-xs text-text-muted">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="shrink-0 opacity-60">
         <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" />
       </svg>

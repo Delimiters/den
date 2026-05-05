@@ -17,13 +17,13 @@ export function LinkPreview({ content }: LinkPreviewProps) {
       onClick={() => openUrl(url)}
     >
       <div className="flex gap-0">
-        <div className="flex-1 p-2.5 min-w-0">
-          <p className="text-text-muted text-xs truncate mb-0.5">{data.siteName}</p>
+        <div className="flex-1 px-3 py-3 min-w-0">
+          <p className="text-text-muted text-xs truncate mb-1">{data.siteName}</p>
           <p className="text-text-link text-sm font-medium line-clamp-1 hover:underline">
             {data.title}
           </p>
           {data.description && (
-            <p className="text-text-secondary text-xs line-clamp-2 mt-0.5">
+            <p className="text-text-secondary text-xs line-clamp-2 mt-1">
               {data.description}
             </p>
           )}
@@ -32,7 +32,7 @@ export function LinkPreview({ content }: LinkPreviewProps) {
           <img
             src={data.image}
             alt=""
-            className="w-20 h-full object-cover shrink-0 max-h-24"
+            className="w-24 object-cover shrink-0 max-h-28 rounded-r"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         )}

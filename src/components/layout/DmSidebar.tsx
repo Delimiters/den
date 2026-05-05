@@ -122,12 +122,14 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
           </p>
           <p className="text-text-muted text-sm truncate">@{currentUser.username}</p>
         </div>
-        <button onClick={onSignOut} title="Sign out" className="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-danger hover:bg-white/10 transition-colors">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M16 13v-2H7V8l-5 4 5 4v-3h9z" />
-            <path d="M20 3h-9c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H9v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-0.5 shrink-0">
+          <button onClick={onSignOut} title="Sign out" className="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-danger hover:bg-white/10 transition-colors">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 13v-2H7V8l-5 4 5 4v-3h9z" />
+              <path d="M20 3h-9c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H9v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

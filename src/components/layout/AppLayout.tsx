@@ -289,25 +289,25 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           </div>
         ) : hasContent ? (
           <>
-            <div className="h-14 px-6 flex items-center gap-2 border-b border-divider shrink-0 shadow-sm">
+            <div className="h-14 pl-8 pr-3 flex items-center gap-1.5 border-b border-divider shrink-0 shadow-sm">
               {isGuildMode ? (
                 <>
-                  <span className="text-text-muted font-bold text-xl">#</span>
+                  <span className="text-text-muted font-bold text-xl leading-none">#</span>
                   <h3 className="text-text-primary font-semibold text-base">{channelName}</h3>
                 </>
               ) : (
                 <>
-                  <span className="text-text-muted text-xl">@</span>
+                  <span className="text-text-muted text-xl leading-none">@</span>
                   <h3 className="text-text-primary font-semibold text-base">{channelName}</h3>
                 </>
               )}
               <div className="flex-1" />
               {/* Pinned messages button — guild text channels only */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5">
               {isGuildMode && currentChannel?.type === "text" && (
                 <button
                   onClick={() => setShowPins((s) => !s)}
-                  className={`text-text-muted hover:text-text-primary transition-colors p-2 rounded hover:bg-msg-hover ${showPins ? "bg-msg-hover text-text-primary" : ""}`}
+                  className={`w-9 h-9 flex items-center justify-center text-text-muted hover:text-text-primary transition-colors rounded hover:bg-msg-hover ${showPins ? "bg-msg-hover text-text-primary" : ""}`}
                   title="Pinned messages"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -317,7 +317,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               )}
               <button
                 onClick={() => setShowSearch(true)}
-                className="text-text-muted hover:text-text-primary transition-colors p-2 rounded hover:bg-msg-hover"
+                className="w-9 h-9 flex items-center justify-center text-text-muted hover:text-text-primary transition-colors rounded hover:bg-msg-hover"
                 title="Search messages (Ctrl+F)"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
