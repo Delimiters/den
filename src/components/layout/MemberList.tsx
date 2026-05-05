@@ -77,7 +77,7 @@ export function MemberList({
 
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0 overflow-y-auto">
-      <div className="px-3 py-4">
+      <div className="px-4 py-5">
         {online.length > 0 && (
           <MemberSection
             label={`Online — ${online.length}`}
@@ -122,7 +122,7 @@ export function MemberList({
                 {!isSelf && onOpenDm && (
                   <button
                     onClick={() => { onOpenDm(contextMenu.member.user_id); setContextMenu(null); }}
-                    className="w-full px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-msg-hover text-left transition-colors"
+                    className="w-full px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-msg-hover text-left transition-colors"
                   >
                     Send Message
                   </button>
@@ -130,12 +130,12 @@ export function MemberList({
                 {canManageRoles && (assignableRoles.length > 0 || revokableRoles.length > 0) && (
                   <>
                     <div className="border-t border-divider my-1" />
-                    <p className="px-3 py-0.5 text-xs text-text-muted">Roles</p>
+                    <p className="px-3 py-1.5 text-xs text-text-muted">Roles</p>
                     {revokableRoles.map((role) => (
                       <button
                         key={role.id}
                         onClick={() => { onRevokeRole?.(contextMenu.member.user_id, role.id); setContextMenu(null); }}
-                        className="w-full px-3 py-1.5 text-sm text-left hover:bg-msg-hover transition-colors flex items-center gap-2"
+                        className="w-full px-3 py-2 text-sm text-left hover:bg-msg-hover transition-colors flex items-center gap-2"
                       >
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: role.color }} />
                         <span className="text-text-secondary flex-1 truncate">{role.name}</span>
@@ -146,7 +146,7 @@ export function MemberList({
                       <button
                         key={role.id}
                         onClick={() => { onAssignRole?.(contextMenu.member.user_id, role.id); setContextMenu(null); }}
-                        className="w-full px-3 py-1.5 text-sm text-left hover:bg-msg-hover transition-colors flex items-center gap-2"
+                        className="w-full px-3 py-2 text-sm text-left hover:bg-msg-hover transition-colors flex items-center gap-2"
                       >
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: role.color }} />
                         <span className="text-text-muted flex-1 truncate">{role.name}</span>

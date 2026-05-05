@@ -79,7 +79,7 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
                     )}
                   </div>
                   {dm.lastMessage && (
-                    <p className="text-xs truncate text-text-muted mt-0.5">
+                    <p className="text-sm truncate text-text-muted mt-0.5">
                       {dm.lastMessage.content || "📎 Attachment"}
                     </p>
                   )}
@@ -91,7 +91,7 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
       </div>
 
       {/* User panel */}
-      <div className="h-14 bg-overlay px-3 flex items-center gap-2 shrink-0 relative">
+      <div className="h-16 bg-overlay px-4 flex items-center gap-3 shrink-0 relative">
         {showStatusMenu && (
           <div
             ref={statusMenuRef}
@@ -101,7 +101,7 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
               <button
                 key={s}
                 onClick={() => { onStatusChange(s); setShowStatusMenu(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-msg-hover transition-colors ${userStatus === s ? "text-text-primary" : "text-text-secondary"}`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 text-base hover:bg-msg-hover transition-colors ${userStatus === s ? "text-text-primary" : "text-text-secondary"}`}
               >
                 <StatusIndicator status={s} size={10} />
                 <span className="capitalize">{s === "dnd" ? "Do Not Disturb" : s}</span>
@@ -117,13 +117,13 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-text-primary text-sm font-semibold truncate">
+          <p className="text-text-primary text-base font-semibold truncate">
             {currentUser.display_name || currentUser.username}
           </p>
-          <p className="text-text-muted text-xs truncate">@{currentUser.username}</p>
+          <p className="text-text-muted text-sm truncate">@{currentUser.username}</p>
         </div>
-        <button onClick={onSignOut} title="Sign out" className="text-text-muted hover:text-danger transition-colors">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <button onClick={onSignOut} title="Sign out" className="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-danger hover:bg-white/10 transition-colors">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M16 13v-2H7V8l-5 4 5 4v-3h9z" />
             <path d="M20 3h-9c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H9v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
           </svg>

@@ -139,7 +139,7 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
       </button>
     )}
     <div ref={scrollRef} className="flex-1 flex flex-col overflow-y-auto" onScroll={handleScroll}>
-      <div className="px-4 pt-10 pb-4">
+      <div className="px-6 pt-10 pb-4">
         <div className="w-16 h-16 rounded-full bg-sidebar flex items-center justify-center text-3xl mb-4">
           {isDm ? "💬" : "#"}
         </div>
@@ -148,7 +148,7 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
             <h3 className="text-text-primary text-2xl font-bold">
               {channelName}
             </h3>
-            <p className="text-text-muted text-sm mt-1">
+            <p className="text-text-muted text-base mt-1">
               This is the beginning of your conversation with {channelName}.
             </p>
           </>
@@ -157,14 +157,14 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
             <h3 className="text-text-primary text-2xl font-bold">
               Welcome to #{channelName}!
             </h3>
-            <p className="text-text-muted text-sm mt-1">
+            <p className="text-text-muted text-base mt-1">
               This is the start of the #{channelName} channel.
             </p>
           </>
         )}
       </div>
 
-      <div className="border-t border-divider mx-4 mb-4" />
+      <div className="border-t border-divider mx-6 mb-4" />
 
       <div className="flex flex-col pb-4">
         {ordered.map((msg, i) => (
@@ -172,7 +172,7 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
             {isDifferentDay(msg, ordered[i - 1]) && (
               <div className="flex items-center gap-3 px-4 my-3">
                 <div className="flex-1 h-px bg-divider" />
-                <span className="text-text-muted text-xs font-medium shrink-0">
+                <span className="text-text-muted text-sm font-medium shrink-0">
                   {formatDateLabel(msg.created_at)}
                 </span>
                 <div className="flex-1 h-px bg-divider" />
@@ -196,7 +196,7 @@ export function MessageList({ channelName, channelId, isDm = false, currentUserI
       </div>
 
       {typingUsers.length > 0 && (
-        <div className="px-4 py-1 text-text-muted text-xs flex items-center gap-1.5">
+        <div className="px-6 py-1 text-text-muted text-sm flex items-center gap-1.5">
           <span className="flex gap-0.5">
             {[0, 1, 2].map((i) => (
               <span
