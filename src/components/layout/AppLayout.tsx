@@ -11,6 +11,7 @@ import { useTyping } from "../../hooks/useTyping";
 import { useRoles } from "../../hooks/useRoles";
 import { useVoiceChannel } from "../../hooks/useVoiceChannel";
 import { useCustomEmojis } from "../../hooks/useCustomEmojis";
+import { useAutoUpdate } from "../../hooks/useAutoUpdate";
 import { hasPermission, Permissions } from "../../utils/permissions";
 import { GuildSidebar } from "./GuildSidebar";
 import { ChannelSidebar } from "./ChannelSidebar";
@@ -76,6 +77,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const { onlineUserIds } = usePresence(currentUser, userStatus);
   useUnreadTracker(currentGuildId);
   useCustomEmojis(currentGuildId);
+  useAutoUpdate();
   useDmUnreadTracker(dmChannels, currentUser.id, (payload) => {
     addToast(payload);
     notify(payload.senderName, payload.preview, payload.senderAvatar);

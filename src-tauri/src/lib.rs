@@ -69,23 +69,6 @@ pub fn run() {
                 }
             });
 
-            // Check for updates in the background
-            #[cfg(not(debug_assertions))]
-            {
-                let handle = app.handle().clone();
-                tauri::async_runtime::spawn(async move {
-                    if let Ok(updater) = handle.updater() {
-                        if let Ok(Some(update)) = updater.check().await {
-                            if let Err(e) = update.download_and_install(|_, _| {}, || {}).await {
-                                eprintln!("Update install failed: {e}");
-                            } else {
-                                handle.restart();
-                            }
-                        }
-                    }
-                });
-            }
-
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![greet])
