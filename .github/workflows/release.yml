@@ -55,6 +55,21 @@ jobs:
             librsvg2-dev \
             patchelf
 
+      - name: Patch version from tag
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          # Update tauri.conf.json
+          jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > /tmp/tc.json
+          mv /tmp/tc.json src-tauri/tauri.conf.json
+          # Update Cargo.toml (first occurrence = package version, not a dep)
+          python3 -c "
+          import re, pathlib
+          p = pathlib.Path('src-tauri/Cargo.toml')
+          content = re.sub(r'^version = \"[^\"]+\"', 'version = \"$VERSION\"', p.read_text(), count=1, flags=re.MULTILINE)
+          p.write_text(content)
+          "
+
       - name: Install frontend dependencies
         run: npm ci
 
