@@ -59,8 +59,13 @@ pub fn run() {
         .setup(|app| {
             setup_tray(app.handle())?;
 
-            // Minimize to tray instead of closing
             let window = app.get_webview_window("main").unwrap();
+
+            // Remove native title bar on Windows — we render custom controls in HTML
+            #[cfg(target_os = "windows")]
+            let _ = window.set_decorations(false);
+
+            // Minimize to tray instead of closing
             let window_clone = window.clone();
             window.on_window_event(move |event| {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
