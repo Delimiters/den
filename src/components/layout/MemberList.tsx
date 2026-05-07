@@ -77,7 +77,7 @@ export function MemberList({
 
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
-      <div className="h-14 border-b border-divider shrink-0" />
+      <div data-tauri-drag-region className="h-14 border-b border-divider shrink-0" />
       <div className="flex-1 overflow-y-auto">
       <div className="px-4 py-5">
         {online.length > 0 && (
