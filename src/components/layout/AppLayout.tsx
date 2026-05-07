@@ -285,7 +285,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
         })()}
         {hasContent ? (
           <>
-            <div className="h-14 pl-8 pr-3 flex items-center gap-1.5 border-b border-divider shrink-0 shadow-sm">
+            <div data-tauri-drag-region className="h-14 pl-8 pr-3 flex items-center gap-1.5 border-b border-divider shrink-0 shadow-sm">
               {isGuildMode ? (
                 <>
                   <span className="text-text-muted font-bold text-xl leading-none">#</span>

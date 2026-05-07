@@ -29,7 +29,9 @@ export function GuildSidebar({
 
   return (
     <>
-      <div className="w-18 bg-guild-rail flex flex-col items-center py-3 gap-2 shrink-0 overflow-y-auto">
+      <div className="w-18 bg-guild-rail flex flex-col items-center pb-3 gap-2 shrink-0 overflow-y-auto">
+        {/* macOS traffic light clearance + drag region */}
+        <div data-tauri-drag-region className="w-full h-8 shrink-0" />
         {/* DM home button */}
         <button
           onClick={onOpenDms}
