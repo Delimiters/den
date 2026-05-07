@@ -1,6 +1,6 @@
 [package]
 name = "den"
-version = "0.2.0"
+version = "0.2.1"
 description = "A privacy-focused Discord alternative for gaming friend groups"
 authors = ["Jake Haley"]
 edition = "2021"
