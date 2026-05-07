@@ -245,7 +245,13 @@ Required repository secrets (Settings → Secrets and variables → Actions → 
 - [x] Link previews / embeds
 - [x] Custom per-server emojis
 - [x] System tray + minimize to tray
-- [ ] Auto-update (Tauri updater)
+- [x] Auto-update (Tauri updater)
+- [ ] Screen sharing / game streaming in desktop app (broken in Tauri — needs native screen capture permissions)
+- [ ] Video chat — camera in voice channels
+- [ ] Direct calling via DMs (voice + video, no shared server required)
+- [ ] Master settings menu — microphone/camera device selection, notification controls, app version, manual update check
+- [ ] Voice channel encryption (E2EE via LiveKit SFrame)
+- [ ] Text message encryption (E2EE — client-side keys, server stores ciphertext)
 - [ ] Mobile (iOS / Android via Tauri 2.0)
 - [ ] Permanent web hosting — the app already runs in any browser; needs a production Vercel deployment with a custom domain and stable env vars
 
