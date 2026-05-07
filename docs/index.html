@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Den — Download</title>
+  <meta name="description" content="Download Den, the private chat app for your gaming group." />
+  <link rel="icon" type="image/svg+xml" href="https://raw.githubusercontent.com/Delimiters/den/main/public/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #08090b;
+      --surface:   #0f1114;
+      --border:    rgba(255,255,255,0.07);
+      --accent:    #5865f2;
+      --accent-dim: rgba(88,101,242,0.15);
+      --ember:     #e65100;
+      --ember-mid: #ff8f00;
+      --text:      #f2f3f5;
+      --muted:     #6b7280;
+      --mono:      'DM Mono', monospace;
+      --sans:      'DM Sans', sans-serif;
+      --display:   'Syne', sans-serif;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      overflow-x: hidden;
+    }
+
+    /* ── Background ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 50% 100%, rgba(230,81,0,0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 80% 60% at 50% 0%,   rgba(88,101,242,0.05) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* noise grain */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+      pointer-events: none;
+      opacity: 0.4;
+    }
+
+    /* ── Layout ── */
+    .page {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem 5rem;
+      gap: 0;
+    }
+
+    /* ── Icon ── */
+    .icon-wrap {
+      position: relative;
+      width: 88px; height: 88px;
+      margin-bottom: 2rem;
+      animation: floatIn 0.7s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .icon-wrap::after {
+      content: '';
+      position: absolute;
+      bottom: -16px; left: 50%; transform: translateX(-50%);
+      width: 60px; height: 12px;
+      background: radial-gradient(ellipse, rgba(230,81,0,0.35) 0%, transparent 70%);
+      filter: blur(4px);
+      border-radius: 50%;
+    }
+    .icon-wrap svg { width: 100%; height: 100%; }
+
+    /* ── Wordmark ── */
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(3.5rem, 10vw, 5.5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: var(--text);
+      animation: floatIn 0.7s 0.08s cubic-bezier(0.16,1,0.3,1) both;
+      margin-bottom: 0.75rem;
+    }
+
+    .tagline {
+      font-size: 1.05rem;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-weight: 400;
+      text-align: center;
+      max-width: 340px;
+      line-height: 1.6;
+      animation: floatIn 0.7s 0.14s cubic-bezier(0.16,1,0.3,1) both;
+      margin-bottom: 3rem;
+    }
+
+    /* ── Download card ── */
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2rem;
+      animation: floatIn 0.7s 0.2s cubic-bezier(0.16,1,0.3,1) both;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(88,101,242,0.5), transparent);
+    }
+
+    .version-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 0.25rem 0.65rem;
+      margin-bottom: 1.25rem;
+      letter-spacing: 0.03em;
+    }
+    .version-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 6px #22c55e;
+      flex-shrink: 0;
+    }
+
+    /* Primary download button */
+    .dl-primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      width: 100%;
+      padding: 0.95rem 1.5rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-family: var(--sans);
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 0 0 0 rgba(88,101,242,0);
+      position: relative;
+      overflow: hidden;
+    }
+    .dl-primary::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.08), transparent);
+      border-radius: inherit;
+      pointer-events: none;
+    }
+    .dl-primary:hover {
+      background: #6875f5;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(88,101,242,0.35);
+    }
+    .dl-primary:active { transform: translateY(0); }
+    .dl-primary svg { flex-shrink: 0; }
+    .dl-primary-label { display: flex; flex-direction: column; align-items: flex-start; gap: 0.05rem; }
+    .dl-primary-label span:first-child { font-size: 0.7rem; opacity: 0.75; font-weight: 400; }
+    .dl-primary-label span:last-child  { font-size: 1rem; font-weight: 600; }
+
+    .dl-size {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.5);
+      margin-top: 0.5rem;
+      text-align: center;
+      min-height: 1rem;
+    }
+
+    /* Divider */
+    .other-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1.25rem 0 1rem;
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .other-label::before,
+    .other-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--border);
+    }
+
+    /* Other platform links */
+    .other-platforms { display: flex; flex-direction: column; gap: 0.4rem; }
+    .dl-other {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 0.875rem;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+      cursor: pointer;
+    }
+    .dl-other:hover {
+      background: rgba(255,255,255,0.04);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .dl-other svg { flex-shrink: 0; opacity: 0.6; }
+    .dl-other:hover svg { opacity: 1; }
+    .dl-other-name { flex: 1; }
+    .dl-other-ext {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      opacity: 0.45;
+    }
+
+    /* ── Footer note ── */
+    .note {
+      margin-top: 2rem;
+      font-size: 0.775rem;
+      color: var(--muted);
+      text-align: center;
+      max-width: 380px;
+      line-height: 1.6;
+      animation: floatIn 0.7s 0.28s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .note a { color: #818cf8; text-decoration: none; }
+    .note a:hover { text-decoration: underline; }
+
+    /* ── Loading / error states ── */
+    .loading-state {
+      text-align: center;
+      padding: 1rem 0;
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+    .error-state { color: #f87171; font-size: 0.8rem; text-align: center; padding: 0.75rem 0; }
+
+    /* ── Animations ── */
+    @keyframes floatIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      .card { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Campfire icon -->
+  <div class="icon-wrap">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+      <rect width="32" height="32" rx="6" fill="#1e1f22"/>
+      <ellipse cx="16" cy="26" rx="9" ry="2.5" fill="#4a2c0a"/>
+      <rect x="7" y="24.5" width="18" height="3" rx="1.5" fill="#5c3510"/>
+      <path d="M16 5 C15 7 13 8 12 10 C11 11.5 11.5 13 10.5 14.5 C9.5 16 9 17 9.5 19 C10 21 11.5 22.5 13 23 C11 21 11.5 19 12.5 17.5 C13 16.5 13.5 16 13 14.5 C14 16 15 17 14.5 19 C14 20.5 14.5 22 16 23 C17.5 22 18 20.5 17.5 19 C17 17 18 16 19 14.5 C18.5 16 19 16.5 19.5 17.5 C20.5 19 21 21 19 23 C20.5 22.5 22 21 22.5 19 C23 17 22.5 16 21.5 14.5 C20.5 13 21 11.5 20 10 C19 8 17 7 16 5Z" fill="#e65100"/>
+      <path d="M16 9 C15 11 14 12.5 14 14 C13.5 15.5 14 17 13.5 18.5 C13 20 13.5 21.5 16 22.5 C18.5 21.5 19 20 18.5 18.5 C18 17 18.5 15.5 18 14 C18 12.5 17 11 16 9Z" fill="#ff8f00"/>
+      <path d="M16 13 C15.2 14.5 15 16 15.2 17.5 C15.4 19 15.8 20 16 20.5 C16.2 20 16.6 19 16.8 17.5 C17 16 16.8 14.5 16 13Z" fill="#fff176"/>
+    </svg>
+  </div>
+
+  <h1>Den</h1>
+  <p class="tagline">Private chat for your gaming group.<br>No corporate surveillance. No bullshit.</p>
+
+  <div class="card">
+    <div id="content">
+      <div class="loading-state">Fetching latest release…</div>
+    </div>
+  </div>
+
+  <p class="note">
+    The installer connects to the official Den servers.<br>
+    Want to self-host?
+    <a href="https://github.com/Delimiters/den" target="_blank" rel="noopener">Build from source on GitHub →</a>
+  </p>
+
+</div>
+
+<script>
+const REPO = 'Delimiters/den';
+
+const OS_INFO = {
+  windows: {
+    label: 'Windows',
+    ext: '.exe',
+    match: a => a.name.endsWith('x64-setup.exe'),
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.6L10.3 4.6V11.5H3V5.6ZM11.1 4.5L21 3V11.4H11.1V4.5ZM3 12.5H10.3V19.4L3 18.4V12.5ZM11.1 12.6H21V21L11.1 19.5V12.6Z"/></svg>`,
+  },
+  mac: {
+    label: 'macOS',
+    ext: '.dmg',
+    match: a => a.name.endsWith('universal.dmg'),
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>`,
+  },
+  linux: {
+    label: 'Linux',
+    ext: '.AppImage',
+    match: a => a.name.endsWith('.AppImage'),
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.504 0c-.155 0-.315.008-.48.021C7.576.336 3.24 3.728 3.24 8.498c0 2.007.74 3.818 1.936 5.232-.695 1.302-1.545 2.57-2.175 3.768-.578 1.104-.877 2.13-.877 3.003 0 1.04.403 1.983 1.109 2.658.687.665 1.659 1.055 2.725 1.098 1.093.045 2.253-.253 3.262-.882.994.616 2.18.876 3.307.876 1.13 0 2.317-.26 3.313-.876 1.009.63 2.168.927 3.261.882 1.066-.043 2.038-.433 2.726-1.098.705-.675 1.108-1.618 1.108-2.658 0-.873-.299-1.899-.877-3.003-.63-1.198-1.48-2.466-2.175-3.768 1.196-1.414 1.936-3.225 1.936-5.232C20.76 3.728 16.425.336 12.984.021 12.82.008 12.659 0 12.504 0zm.016 2.153c2.783 0 5.056 2.273 5.056 5.056s-2.273 5.056-5.056 5.056-5.056-2.273-5.056-5.056 2.273-5.056 5.056-5.056z"/></svg>`,
+  },
+};
+
+function detectOS() {
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes('win')) return 'windows';
+  if (ua.includes('mac')) return 'mac';
+  return 'linux';
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '';
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+async function init() {
+  const el = document.getElementById('content');
+
+  let release;
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
+    if (!res.ok) throw new Error(res.statusText);
+    release = await res.json();
+  } catch {
+    el.innerHTML = `<div class="error-state">Could not fetch release info. <a href="https://github.com/${REPO}/releases/latest" style="color:#818cf8">View on GitHub →</a></div>`;
+    return;
+  }
+
+  const version = release.tag_name || '';
+  const assets  = release.assets || [];
+
+  const primary = detectOS();
+  const others  = Object.keys(OS_INFO).filter(k => k !== primary);
+
+  function buildPrimary(osKey) {
+    const os = OS_INFO[osKey];
+    const asset = assets.find(os.match);
+    if (!asset) return `<div class="error-state">No ${os.label} build in this release yet.</div>`;
+    return `
+      <a class="dl-primary" href="${asset.browser_download_url}" download>
+        ${os.icon}
+        <span class="dl-primary-label">
+          <span>Download for</span>
+          <span>${os.label}</span>
+        </span>
+      </a>
+      <div class="dl-size">${formatBytes(asset.size)}</div>
+    `;
+  }
+
+  function buildOther(osKey) {
+    const os = OS_INFO[osKey];
+    const asset = assets.find(os.match);
+    if (!asset) return '';
+    return `
+      <a class="dl-other" href="${asset.browser_download_url}" download>
+        ${os.icon}
+        <span class="dl-other-name">${os.label}</span>
+        <span class="dl-other-ext">${os.ext}</span>
+      </a>
+    `;
+  }
+
+  const otherLinks = others.map(buildOther).filter(Boolean).join('');
+
+  el.innerHTML = `
+    <div class="version-badge">
+      <span class="version-dot"></span>
+      ${version} — Latest release
+    </div>
+    ${buildPrimary(primary)}
+    ${otherLinks ? `
+      <div class="other-label">Other platforms</div>
+      <div class="other-platforms">${otherLinks}</div>
+    ` : ''}
+  `;
+}
+
+init();
+</script>
+</body>
+</html>
