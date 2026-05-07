@@ -26,6 +26,7 @@ import { ToastContainer } from "../ui/Toast";
 import { useToasts } from "../../hooks/useToasts";
 import { requestNotificationPermission, notify } from "../../utils/desktopNotification";
 import { QuickSwitcher } from "../ui/QuickSwitcher";
+import { WindowControls } from "./WindowControls";
 import type { User, Guild, Channel } from "../../types";
 
 // Lazy-load LiveKit — only pulled in when a voice channel is active
@@ -404,6 +405,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
       {showQuickSwitcher && <QuickSwitcher onClose={() => setShowQuickSwitcher(false)} />}
+      <WindowControls />
     </div>
   );
 }
