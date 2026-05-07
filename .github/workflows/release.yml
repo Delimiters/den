@@ -2,11 +2,42 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
 
 jobs:
+  # Compute the next patch version and create the tag — all in this run so we
+  # don't depend on a separate tag-push event (which GITHUB_TOKEN can't trigger).
+  prepare:
+    if: "!startsWith(github.event.head_commit.message, 'chore: bump version')"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next patch and create tag
+        id: ver
+        run: |
+          latest=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          [ -z "$latest" ] && latest="v0.2.3"
+          version=${latest#v}
+          major=$(echo "$version" | cut -d. -f1)
+          minor=$(echo "$version" | cut -d. -f2)
+          patch=$(echo "$version" | cut -d. -f3)
+          new_version="$major.$minor.$((patch + 1))"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v$new_version"
+          git push origin "v$new_version"
+          echo "version=$new_version" >> "$GITHUB_OUTPUT"
+          echo "Tagged v$new_version"
+
   build:
+    needs: prepare
     permissions:
       contents: write
     strategy:
@@ -58,11 +89,9 @@ jobs:
       - name: Patch version from tag
         shell: bash
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          # Update tauri.conf.json
+          VERSION="${{ needs.prepare.outputs.version }}"
           jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > /tmp/tc.json
           mv /tmp/tc.json src-tauri/tauri.conf.json
-          # Update Cargo.toml (first occurrence = package version, not a dep)
           python3 -c "
           import re, pathlib
           p = pathlib.Path('src-tauri/Cargo.toml')
@@ -82,8 +111,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Den ${{ github.ref_name }}'
+          tagName: v${{ needs.prepare.outputs.version }}
+          releaseName: 'Den v${{ needs.prepare.outputs.version }}'
           releaseBody: |
             ## Download
 
@@ -102,8 +131,8 @@ jobs:
           prerelease: false
           args: --target ${{ matrix.target }}
 
-  publish-release:
-    needs: build
+  publish:
+    needs: [prepare, build]
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -112,7 +141,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const tag = context.ref.replace('refs/tags/', '');
+            const tag = 'v${{ needs.prepare.outputs.version }}';
             const { data: releases } = await github.rest.repos.listReleases({
               owner: context.repo.owner,
               repo: context.repo.repo,
