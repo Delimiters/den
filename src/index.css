@@ -63,3 +63,21 @@ body,
 ::-webkit-scrollbar-thumb:hover {
   background: #111214;
 }
+
+/* Update notification animations */
+@keyframes den-update-slide-up {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes den-update-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+@keyframes den-update-bob {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(2px); }
+}
+@keyframes den-update-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

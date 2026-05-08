@@ -27,6 +27,7 @@ import { useToasts } from "../../hooks/useToasts";
 import { requestNotificationPermission, notify } from "../../utils/desktopNotification";
 import { QuickSwitcher } from "../ui/QuickSwitcher";
 import { WindowControls } from "./WindowControls";
+import { UpdateNotification } from "../ui/UpdateNotification";
 import type { User, Guild, Channel } from "../../types";
 
 // Lazy-load LiveKit — only pulled in when a voice channel is active
@@ -78,7 +79,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const { onlineUserIds } = usePresence(currentUser, userStatus);
   useUnreadTracker(currentGuildId);
   useCustomEmojis(currentGuildId);
-  useAutoUpdate();
+  const updateState = useAutoUpdate();
   useDmUnreadTracker(dmChannels, currentUser.id, (payload) => {
     addToast(payload);
     notify(payload.senderName, payload.preview, payload.senderAvatar);
@@ -405,6 +406,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
       {showQuickSwitcher && <QuickSwitcher onClose={() => setShowQuickSwitcher(false)} />}
+      <UpdateNotification {...updateState} />
       <WindowControls />
     </div>
   );
