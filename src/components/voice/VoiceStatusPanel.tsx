@@ -6,10 +6,11 @@ import { prefs } from "../../utils/prefs";
 interface VoiceStatusPanelProps {
   channelName: string;
   onLeave: () => void;
-  onViewVoiceChannel?: () => void;
+  /** Called with the sharer's identity when the user clicks a LIVE badge to opt into watching. */
+  onWatchScreenShare?: (identity: string) => void;
 }
 
-export function VoiceStatusPanel({ channelName, onLeave, onViewVoiceChannel }: VoiceStatusPanelProps) {
+export function VoiceStatusPanel({ channelName, onLeave, onWatchScreenShare }: VoiceStatusPanelProps) {
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant();
   const [isDeafened, setIsDeafened] = useState(false);
   const [noiseCancellation, setNoiseCancellation] = useState(prefs.getNoiseCancellation);
@@ -113,9 +114,9 @@ export function VoiceStatusPanel({ channelName, onLeave, onViewVoiceChannel }: V
                 )}
                 {hasScreen && (
                   <button
-                    onClick={onViewVoiceChannel}
+                    onClick={() => onWatchScreenShare?.(p.identity)}
                     className="text-[9px] font-bold px-1 py-0.5 bg-red-500 hover:bg-red-400 text-white rounded leading-none shrink-0 transition-colors"
-                    title="View screen share"
+                    title="Watch screen share"
                   >
                     LIVE
                   </button>

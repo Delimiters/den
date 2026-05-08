@@ -6,7 +6,7 @@ import {
   useParticipants,
   useTracks,
 } from "@livekit/components-react";
-import { ExternalE2EEKeyProvider, Track } from "livekit-client";
+import { ExternalE2EEKeyProvider, RemoteTrackPublication, Track } from "livekit-client";
 import { ParticipantTile, ScreenShareView } from "./ParticipantTile";
 import { VoiceStatusPanel } from "./VoiceStatusPanel";
 import type { Channel } from "../../types";
@@ -91,16 +91,45 @@ function VoicePortals({
   onScreenShareChange?: (active: boolean) => void;
   onViewVoiceChannel?: () => void;
 }) {
-  const screenShareTracks = useTracks([Track.Source.ScreenShare]);
-  const screenShareActive = screenShareTracks.length > 0;
+  // Tracks the user has explicitly opted into watching — prevents the auto-unsubscribe
+  // effect from re-firing and cancelling their opt-in on the next render.
+  const optedInSids = useRef(new Set<string>());
 
+  // Subscribed-only: drives the auto-takeover and ScreenShareView rendering
+  const screenShareTracks = useTracks([Track.Source.ScreenShare]);
+  // All published (including unsubscribed): drives LIVE badges in the sidebar
+  const allScreenShareTracks = useTracks([Track.Source.ScreenShare], { onlySubscribed: false });
+
+  const screenShareActive = screenShareTracks.length > 0;
   useEffect(() => {
     onScreenShareChange?.(screenShareActive);
   }, [screenShareActive, onScreenShareChange]);
 
+  // Unsubscribe from remote screen shares as soon as they publish — user must opt in via LIVE badge
+  useEffect(() => {
+    for (const ref of allScreenShareTracks) {
+      if (ref.participant.isLocal) continue;
+      const pub = ref.publication as RemoteTrackPublication | undefined;
+      if (!pub?.isSubscribed) continue;
+      if (!optedInSids.current.has(pub.trackSid)) {
+        pub.setSubscribed(false);
+      }
+    }
+  }, [allScreenShareTracks]);
+
+  function watchScreenShare(identity: string) {
+    const ref = allScreenShareTracks.find((t) => t.participant.identity === identity);
+    const pub = ref?.publication as RemoteTrackPublication | undefined;
+    if (pub) {
+      optedInSids.current.add(pub.trackSid);
+      pub.setSubscribed(true);
+    }
+    onViewVoiceChannel?.();
+  }
+
   const sidebar = voicePanelRef.current
     ? createPortal(
-        <VoiceStatusPanel channelName={channelName} onLeave={onLeave} onViewVoiceChannel={onViewVoiceChannel} />,
+        <VoiceStatusPanel channelName={channelName} onLeave={onLeave} onWatchScreenShare={watchScreenShare} />,
         voicePanelRef.current
       )
     : null;
