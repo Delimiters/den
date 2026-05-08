@@ -102,6 +102,47 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const [voiceContentEl, setVoiceContentEl] = useState<HTMLDivElement | null>(null);
   const [screenShareActive, setScreenShareActive] = useState(false);
 
+  // Voice presence — tracks who is in which voice channel via Supabase Presence.
+  // Presence auto-removes entries when the WebSocket drops (force-quit, crash),
+  // giving near-instant cleanup instead of waiting for a DB heartbeat to expire.
+  const [voicePresence, setVoicePresence] = useState<{ userId: string; channelId: string; displayName: string; avatarUrl: string | null }[]>([]);
+  const voicePresenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  useEffect(() => {
+    voicePresenceChannelRef.current?.unsubscribe();
+    voicePresenceChannelRef.current = null;
+    setVoicePresence([]);
+    if (!currentGuildId) return;
+
+    const ch = supabase.channel(`voice-presence:${currentGuildId}`);
+
+    ch.on("presence", { event: "sync" }, () => {
+      const raw = ch.presenceState<{ userId: string; channelId: string; displayName: string; avatarUrl: string | null }>();
+      setVoicePresence(Object.values(raw).flat());
+    });
+
+    ch.subscribe();
+    voicePresenceChannelRef.current = ch;
+
+    return () => { ch.unsubscribe(); voicePresenceChannelRef.current = null; };
+  }, [currentGuildId]);
+
+  // Track / untrack when voice channel changes
+  useEffect(() => {
+    const ch = voicePresenceChannelRef.current;
+    if (!ch) return;
+    if (voiceChannelId) {
+      ch.track({
+        userId: currentUser.id,
+        channelId: voiceChannelId,
+        displayName: currentUser.display_name || currentUser.username,
+        avatarUrl: currentUser.avatar_url ?? null,
+      });
+    } else {
+      ch.untrack();
+    }
+  }, [voiceChannelId, currentUser]);
+
   // Toast + desktop notification on @mention in guild channels
   const messages = useAppStore((s) => s.messages);
   const latestMsgId = useRef<string | null>(null);
@@ -248,6 +289,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           unread={unread}
           canManageChannels={hasPermission(myPermissions, Permissions.MANAGE_CHANNELS)}
           voicePanelRef={voicePanelRef}
+          voicePresence={voicePresence}
           onChannelSelect={(id) => {
             const ch = channels.find((c) => c.id === id);
             if (ch?.type === "voice") {

@@ -31,14 +31,24 @@ export function VoiceStatusPanel({ channelName, onLeave, onWatchScreenShare }: V
   const micMuted = !isMicrophoneEnabled;
 
   async function toggleMic() {
-    if (micMuted) {
-      await localParticipant.setMicrophoneEnabled(true, {
-        noiseSuppression: noiseCancellation,
-        echoCancellation: noiseCancellation,
-        autoGainControl: noiseCancellation,
-      });
-    } else {
-      await localParticipant.setMicrophoneEnabled(false);
+    try {
+      if (micMuted) {
+        await localParticipant.setMicrophoneEnabled(true, {
+          noiseSuppression: noiseCancellation,
+          echoCancellation: noiseCancellation,
+          autoGainControl: noiseCancellation,
+        });
+      } else {
+        await localParticipant.setMicrophoneEnabled(false);
+      }
+    } catch (err) {
+      const msg = (err as Error)?.message ?? String(err);
+      if (msg.includes("Permission denied") || msg.includes("NotAllowed") || msg.includes("NotFoundError")) {
+        setMediaError("Microphone access denied — grant access in System Settings → Privacy & Security → Microphone.");
+      } else if (!msg.includes("cancelled") && !msg.includes("abort")) {
+        setMediaError(`Microphone error: ${msg}`);
+        console.error("[mic]", err);
+      }
     }
   }
 

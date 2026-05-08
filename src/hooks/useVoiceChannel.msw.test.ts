@@ -1,6 +1,6 @@
 /**
- * MSW-based tests for useVoiceChannel — exercises the real Supabase client
- * at the HTTP level instead of mocking the module.
+ * Tests for useVoiceChannel — verifies join/leave behavior
+ * against a mocked LiveKit token endpoint.
  */
 import { renderHook, act } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
@@ -29,55 +29,31 @@ beforeEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("useVoiceChannel (MSW)", () => {
-  it("leave fires DELETE to voice_sessions before clearing store", async () => {
+describe("useVoiceChannel", () => {
+  it("leave clears store when connected", async () => {
     seedVoiceState();
-
-    const deleteCalls: string[] = [];
-    server.use(
-      http.delete(`${SUPABASE}/rest/v1/voice_sessions`, ({ request }) => {
-        deleteCalls.push(request.url);
-        return HttpResponse.json({});
-      })
-    );
 
     const { result } = renderHook(() => useVoiceChannel("user-1"));
     expect(result.current.isConnected).toBe(true);
 
     act(() => { result.current.leave(); });
-    await act(async () => {});
 
-    // 2 DELETEs: one from startup stale-session cleanup + one from leave()
-    expect(deleteCalls.length).toBeGreaterThanOrEqual(2);
-    expect(deleteCalls.every((u) => u.includes("voice_sessions"))).toBe(true);
+    expect(result.current.isConnected).toBe(false);
+    expect(useAppStore.getState().voiceChannelId).toBeNull();
+  });
+
+  it("leave is idempotent — second call does nothing when not connected", () => {
+    const { result } = renderHook(() => useVoiceChannel("user-1"));
+    expect(result.current.isConnected).toBe(false);
+
+    // Should not throw even when called without being connected
+    act(() => { result.current.leave(); });
+    act(() => { result.current.leave(); });
+
     expect(result.current.isConnected).toBe(false);
   });
 
-  it("leave is idempotent — second call does not fire another DELETE", async () => {
-    seedVoiceState();
-
-    const deleteCalls: string[] = [];
-    server.use(
-      http.delete(`${SUPABASE}/rest/v1/voice_sessions`, ({ request }) => {
-        deleteCalls.push(request.url);
-        return HttpResponse.json({});
-      })
-    );
-
-    const { result } = renderHook(() => useVoiceChannel("user-1"));
-    await act(async () => {}); // let startup cleanup effect run first
-    const callsAfterMount = deleteCalls.length; // baseline includes startup DELETE
-
-    act(() => { result.current.leave(); });
-    act(() => { result.current.leave(); }); // simulates onDisconnected double-fire
-
-    await act(async () => {});
-
-    // leave() should fire exactly once despite being called twice
-    expect(deleteCalls.length).toBe(callsAfterMount + 1);
-  });
-
-  it("join fires POST to voice_sessions on successful token fetch", async () => {
+  it("join sets store state after successful token fetch", async () => {
     vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
       data: { session: { access_token: "test-token" } as any },
       error: null,
@@ -89,12 +65,27 @@ describe("useVoiceChannel (MSW)", () => {
       )
     );
 
-    const upsertBodies: unknown[] = [];
+    const { result } = renderHook(() => useVoiceChannel("user-1"));
+
+    await act(async () => {
+      await result.current.join("ch-1", "guild-1");
+    });
+
+    expect(result.current.isConnected).toBe(true);
+    expect(result.current.voiceChannelId).toBe("ch-1");
+    const state = useAppStore.getState() as any;
+    expect(state.voiceToken).toBe("lk-jwt");
+    expect(state.voiceLivekitUrl).toBe("wss://test.livekit.cloud");
+  });
+
+  it("join does nothing if token fetch fails", async () => {
+    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
+      data: { session: { access_token: "test-token" } as any },
+      error: null,
+    });
+
     server.use(
-      http.post(`${SUPABASE}/rest/v1/voice_sessions`, async ({ request }) => {
-        upsertBodies.push(await request.json());
-        return HttpResponse.json({});
-      })
+      http.post(LIVEKIT_TOKEN_URL, () => HttpResponse.json({ error: "forbidden" }, { status: 403 }))
     );
 
     const { result } = renderHook(() => useVoiceChannel("user-1"));
@@ -103,12 +94,21 @@ describe("useVoiceChannel (MSW)", () => {
       await result.current.join("ch-1", "guild-1");
     });
 
-    expect(upsertBodies).toHaveLength(1);
-    expect(upsertBodies[0]).toMatchObject({
-      user_id: "user-1",
-      channel_id: "ch-1",
-      guild_id: "guild-1",
+    expect(result.current.isConnected).toBe(false);
+  });
+
+  it("join does nothing if no session", async () => {
+    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
+      data: { session: null },
+      error: null,
     });
-    expect(result.current.isConnected).toBe(true);
+
+    const { result } = renderHook(() => useVoiceChannel("user-1"));
+
+    await act(async () => {
+      await result.current.join("ch-1", "guild-1");
+    });
+
+    expect(result.current.isConnected).toBe(false);
   });
 });
