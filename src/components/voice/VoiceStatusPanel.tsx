@@ -14,7 +14,9 @@ export function VoiceStatusPanel({ channelName, onLeave }: VoiceStatusPanelProps
   const [noiseCancellation, setNoiseCancellation] = useState(prefs.getNoiseCancellation);
 
   const screenShareTracks = useTracks([Track.Source.ScreenShare], { onlySubscribed: false });
+  const cameraTracks = useTracks([Track.Source.Camera], { onlySubscribed: false });
   const isScreenSharing = screenShareTracks.some((t) => t.participant.isLocal);
+  const isCameraOn = cameraTracks.some((t) => t.participant.isLocal);
 
   const micMuted = !isMicrophoneEnabled;
 
@@ -36,8 +38,28 @@ export function VoiceStatusPanel({ channelName, onLeave }: VoiceStatusPanelProps
     if (next) await localParticipant.setMicrophoneEnabled(false);
   }
 
+  async function toggleCamera() {
+    try {
+      const deviceId = prefs.getCameraDeviceId();
+      await localParticipant.setCameraEnabled(!isCameraOn, deviceId ? { deviceId } : undefined);
+    } catch (err) {
+      const msg = (err as Error)?.message ?? "";
+      if (!msg.includes("Permission denied") && !msg.includes("NotAllowed") && !msg.includes("cancelled")) {
+        console.error("[camera]", err);
+      }
+    }
+  }
+
   async function toggleScreenShare() {
-    await localParticipant.setScreenShareEnabled(!isScreenSharing);
+    try {
+      await localParticipant.setScreenShareEnabled(!isScreenSharing);
+    } catch (err) {
+      const msg = (err as Error)?.message ?? "";
+      // User cancelled the picker or denied permission — not an error to surface
+      if (!msg.includes("Permission denied") && !msg.includes("NotAllowed") && !msg.includes("cancelled")) {
+        console.error("[screenshare]", err);
+      }
+    }
   }
 
   async function toggleNC() {
@@ -101,6 +123,20 @@ export function VoiceStatusPanel({ channelName, onLeave }: VoiceStatusPanelProps
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zm-7-3.53v-2.19c-2.78.48-4.34 1.71-5.5 3.72.14-1.37.49-4.4 3.28-6.31l-.78-.78V7.5L14 11l-1.5 2.47-.5-3z"/>
           </svg>
+        </PanelButton>
+
+        {/* Camera */}
+        <PanelButton onClick={toggleCamera} title={isCameraOn ? "Turn off camera" : "Turn on camera"} active={isCameraOn}>
+          {isCameraOn ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21 6.5l-4-4-8.26 8.26-1.31-1.31 1.41-1.41-1.42-1.42-2.82 2.82 1.42 1.42 1.41-1.41 1.31 1.31L3 16.5V18h1.5l8.26-8.26 1.31 1.31-1.41 1.41 1.42 1.42 2.82-2.82-1.42-1.42-1.41 1.41-1.31-1.31L21 3.5V6.5zm-11.5 9l-1-1 8.09-8.09 1 1L9.5 15.5z" />
+              <path d="M21 6.5l-4-4-2.12 2.12 4 4L21 6.5zM17 10.5V7c0-.55-.45-1-1-1H8.41L5 2.59 3.59 4 20 20.41 21 19.41V10.5l-4 4v-4z" />
+            </svg>
+          )}
         </PanelButton>
 
         {/* Noise cancellation */}

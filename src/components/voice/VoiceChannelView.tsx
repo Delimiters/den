@@ -105,6 +105,7 @@ function VoiceRoomContent({
 }) {
   const participants = useParticipants();
   const screenShareTracks = useTracks([Track.Source.ScreenShare]);
+  const cameraTracks = useTracks([Track.Source.Camera]);
   const hasScreenShare = screenShareTracks.length > 0;
 
   const sidebarPanel = voicePanelRef.current
@@ -140,6 +141,7 @@ function VoiceRoomContent({
             <ParticipantTile
               key={participant.identity}
               participant={participant}
+              cameraTrackRef={cameraTracks.find((t) => t.participant.identity === participant.identity)}
               isLocal={participant.identity === currentUserId}
             />
           ))}
