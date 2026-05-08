@@ -1,14 +1,15 @@
-import { useState, useEffect, useRef } from "react";
-import { supabase } from "../../lib/supabase";
+import { useState, useRef, useEffect } from "react";
 import type { Channel, Guild, User, UserStatus } from "../../types";
 import { Avatar } from "../ui/Avatar";
 import { StatusIndicator } from "../ui/StatusIndicator";
 import { UserSettingsModal } from "./UserSettingsModal";
+import { supabase } from "../../lib/supabase";
 
-interface VoiceSession {
-  user_id: string;
-  channel_id: string;
-  user?: { username: string; display_name: string; avatar_url: string | null };
+interface VoicePresenceEntry {
+  userId: string;
+  channelId: string;
+  displayName: string;
+  avatarUrl: string | null;
 }
 
 interface ChannelSidebarProps {
@@ -20,6 +21,7 @@ interface ChannelSidebarProps {
   unread: Record<string, true>;
   canManageChannels?: boolean;
   voicePanelRef?: React.RefObject<HTMLDivElement | null>;
+  voicePresence?: VoicePresenceEntry[];
   onChannelSelect: (channelId: string) => void;
   onChannelsRefresh: () => void;
   onStatusChange: (s: UserStatus) => void;
@@ -36,6 +38,7 @@ export function ChannelSidebar({
   unread,
   canManageChannels = false,
   voicePanelRef,
+  voicePresence = [],
   onChannelSelect,
   onChannelsRefresh,
   onStatusChange,
@@ -46,7 +49,6 @@ export function ChannelSidebar({
   const [showAddChannel, setShowAddChannel] = useState<"text" | "voice" | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
-  const [voiceSessions, setVoiceSessions] = useState<VoiceSession[]>([]);
   const statusMenuRef = useRef<HTMLDivElement>(null);
 
   const categories = channels.filter((c) => c.type === "category").sort((a, b) => a.position - b.position);
@@ -54,29 +56,6 @@ export function ChannelSidebar({
   const textChannels = channels.filter((c) => c.type === "text" && !hasCategories);
   const voiceChannels = channels.filter((c) => c.type === "voice" && !hasCategories);
 
-  // Load + subscribe to voice sessions for the current guild
-  useEffect(() => {
-    if (!guild?.id) { setVoiceSessions([]); return; }
-
-    supabase
-      .from("voice_sessions")
-      .select("user_id, channel_id, user:users!user_id(username, display_name, avatar_url)")
-      .eq("guild_id", guild.id)
-      .then(({ data }) => { if (data) setVoiceSessions(data as unknown as VoiceSession[]); });
-
-    const sub = supabase
-      .channel(`voice:${guild.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "voice_sessions", filter: `guild_id=eq.${guild.id}` }, async () => {
-        const { data } = await supabase
-          .from("voice_sessions")
-          .select("user_id, channel_id, user:users!user_id(username, display_name, avatar_url)")
-          .eq("guild_id", guild.id);
-        if (data) setVoiceSessions(data as unknown as VoiceSession[]);
-      })
-      .subscribe();
-
-    return () => { sub.unsubscribe(); };
-  }, [guild?.id]);
 
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
@@ -130,7 +109,7 @@ export function ChannelSidebar({
                     onAdd={canManageChannels ? () => setShowAddChannel("text") : undefined}
                   >
                     {catChannels.map((ch) => {
-                      const participants = voiceSessions.filter((s) => s.channel_id === ch.id);
+                      const participants = voicePresence.filter((p) => p.channelId === ch.id);
                       return (
                         <div key={ch.id}>
                           <ChannelRow
@@ -140,15 +119,12 @@ export function ChannelSidebar({
                             participantCount={ch.type === "voice" ? participants.length : 0}
                             onClick={() => onChannelSelect(ch.id)}
                           />
-                          {ch.type === "voice" && participants.map((s) => {
-                            const name = (s.user as any)?.display_name || (s.user as any)?.username || "Unknown";
-                            return (
-                              <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-2">
-                                <Avatar src={(s.user as any)?.avatar_url ?? null} name={name} size={14} />
-                                <span className="text-text-muted text-sm truncate">{name}</span>
-                              </div>
-                            );
-                          })}
+                          {ch.type === "voice" && participants.map((p) => (
+                            <div key={p.userId} className="flex items-center gap-2 pl-7 pr-2 py-2">
+                              <Avatar src={p.avatarUrl} name={p.displayName} size={14} />
+                              <span className="text-text-muted text-sm truncate">{p.displayName}</span>
+                            </div>
+                          ))}
                         </div>
                       );
                     })}
@@ -175,7 +151,7 @@ export function ChannelSidebar({
                 {voiceChannels.length > 0 && (
                   <ChannelSection label="Voice Channels" onAdd={canManageChannels ? () => setShowAddChannel("voice") : undefined}>
                     {voiceChannels.map((ch) => {
-                      const participants = voiceSessions.filter((s) => s.channel_id === ch.id);
+                      const participants = voicePresence.filter((p) => p.channelId === ch.id);
                       return (
                         <div key={ch.id}>
                           <ChannelRow
@@ -185,15 +161,12 @@ export function ChannelSidebar({
                             participantCount={participants.length}
                             onClick={() => onChannelSelect(ch.id)}
                           />
-                          {participants.map((s) => {
-                            const name = (s.user as any)?.display_name || (s.user as any)?.username || "Unknown";
-                            return (
-                              <div key={s.user_id} className="flex items-center gap-2 pl-7 pr-2 py-2">
-                                <Avatar src={(s.user as any)?.avatar_url ?? null} name={name} size={14} />
-                                <span className="text-text-muted text-sm truncate">{name}</span>
-                              </div>
-                            );
-                          })}
+                          {participants.map((p) => (
+                            <div key={p.userId} className="flex items-center gap-2 pl-7 pr-2 py-2">
+                              <Avatar src={p.avatarUrl} name={p.displayName} size={14} />
+                              <span className="text-text-muted text-sm truncate">{p.displayName}</span>
+                            </div>
+                          ))}
                         </div>
                       );
                     })}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocalParticipant, useParticipants, useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { prefs } from "../../utils/prefs";
@@ -6,13 +6,21 @@ import { prefs } from "../../utils/prefs";
 interface VoiceStatusPanelProps {
   channelName: string;
   onLeave: () => void;
-  onViewVoiceChannel?: () => void;
+  /** Called with the sharer's identity when the user clicks a LIVE badge to opt into watching. */
+  onWatchScreenShare?: (identity: string) => void;
 }
 
-export function VoiceStatusPanel({ channelName, onLeave, onViewVoiceChannel }: VoiceStatusPanelProps) {
+export function VoiceStatusPanel({ channelName, onLeave, onWatchScreenShare }: VoiceStatusPanelProps) {
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant();
   const [isDeafened, setIsDeafened] = useState(false);
   const [noiseCancellation, setNoiseCancellation] = useState(prefs.getNoiseCancellation);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!mediaError) return;
+    const t = setTimeout(() => setMediaError(null), 5000);
+    return () => clearTimeout(t);
+  }, [mediaError]);
 
   const participants = useParticipants();
   const screenShareTracks = useTracks([Track.Source.ScreenShare], { onlySubscribed: false });
@@ -23,14 +31,24 @@ export function VoiceStatusPanel({ channelName, onLeave, onViewVoiceChannel }: V
   const micMuted = !isMicrophoneEnabled;
 
   async function toggleMic() {
-    if (micMuted) {
-      await localParticipant.setMicrophoneEnabled(true, {
-        noiseSuppression: noiseCancellation,
-        echoCancellation: noiseCancellation,
-        autoGainControl: noiseCancellation,
-      });
-    } else {
-      await localParticipant.setMicrophoneEnabled(false);
+    try {
+      if (micMuted) {
+        await localParticipant.setMicrophoneEnabled(true, {
+          noiseSuppression: noiseCancellation,
+          echoCancellation: noiseCancellation,
+          autoGainControl: noiseCancellation,
+        });
+      } else {
+        await localParticipant.setMicrophoneEnabled(false);
+      }
+    } catch (err) {
+      const msg = (err as Error)?.message ?? String(err);
+      if (msg.includes("Permission denied") || msg.includes("NotAllowed") || msg.includes("NotFoundError")) {
+        setMediaError("Microphone access denied — grant access in System Settings → Privacy & Security → Microphone.");
+      } else if (!msg.includes("cancelled") && !msg.includes("abort")) {
+        setMediaError(`Microphone error: ${msg}`);
+        console.error("[mic]", err);
+      }
     }
   }
 
@@ -45,8 +63,11 @@ export function VoiceStatusPanel({ channelName, onLeave, onViewVoiceChannel }: V
       const deviceId = prefs.getCameraDeviceId();
       await localParticipant.setCameraEnabled(!isCameraOn, deviceId ? { deviceId } : undefined);
     } catch (err) {
-      const msg = (err as Error)?.message ?? "";
-      if (!msg.includes("Permission denied") && !msg.includes("NotAllowed") && !msg.includes("cancelled")) {
+      const msg = (err as Error)?.message ?? String(err);
+      if (msg.includes("Permission denied") || msg.includes("NotAllowed") || msg.includes("NotFoundError")) {
+        setMediaError("Camera access denied — grant access in System Settings → Privacy & Security → Camera.");
+      } else if (!msg.includes("cancelled") && !msg.includes("abort")) {
+        setMediaError(`Camera error: ${msg}`);
         console.error("[camera]", err);
       }
     }
@@ -56,9 +77,13 @@ export function VoiceStatusPanel({ channelName, onLeave, onViewVoiceChannel }: V
     try {
       await localParticipant.setScreenShareEnabled(!isScreenSharing);
     } catch (err) {
-      const msg = (err as Error)?.message ?? "";
-      // User cancelled the picker or denied permission — not an error to surface
-      if (!msg.includes("Permission denied") && !msg.includes("NotAllowed") && !msg.includes("cancelled")) {
+      const msg = (err as Error)?.message ?? String(err);
+      if (msg.includes("Permission denied") || msg.includes("NotAllowed")) {
+        setMediaError("Screen recording denied — grant access in System Settings → Privacy & Security → Screen Recording.");
+      } else if (msg.includes("not supported") || msg.includes("NotSupportedError")) {
+        setMediaError("Screen sharing is not supported in this version of the app.");
+      } else if (!msg.includes("cancelled") && !msg.includes("abort")) {
+        setMediaError(`Screen share error: ${msg}`);
         console.error("[screenshare]", err);
       }
     }
@@ -113,9 +138,9 @@ export function VoiceStatusPanel({ channelName, onLeave, onViewVoiceChannel }: V
                 )}
                 {hasScreen && (
                   <button
-                    onClick={onViewVoiceChannel}
+                    onClick={() => onWatchScreenShare?.(p.identity)}
                     className="text-[9px] font-bold px-1 py-0.5 bg-red-500 hover:bg-red-400 text-white rounded leading-none shrink-0 transition-colors"
-                    title="View screen share"
+                    title="Watch screen share"
                   >
                     LIVE
                   </button>
@@ -123,6 +148,13 @@ export function VoiceStatusPanel({ channelName, onLeave, onViewVoiceChannel }: V
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Permission / media error */}
+      {mediaError && (
+        <div className="mx-2 mb-1 px-2 py-1.5 bg-danger/20 border border-danger/30 rounded text-danger text-[10px] leading-tight">
+          {mediaError}
         </div>
       )}
 
@@ -161,18 +193,11 @@ export function VoiceStatusPanel({ channelName, onLeave, onViewVoiceChannel }: V
           </svg>
         </PanelButton>
 
-        {/* Camera */}
+        {/* Camera — photo camera icon with lens, active color when on */}
         <PanelButton onClick={toggleCamera} title={isCameraOn ? "Turn off camera" : "Turn on camera"} active={isCameraOn}>
-          {isCameraOn ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M21 6.5l-4-4-8.26 8.26-1.31-1.31 1.41-1.41-1.42-1.42-2.82 2.82 1.42 1.42 1.41-1.41 1.31 1.31L3 16.5V18h1.5l8.26-8.26 1.31 1.31-1.41 1.41 1.42 1.42 2.82-2.82-1.42-1.42-1.41 1.41-1.31-1.31L21 3.5V6.5zm-11.5 9l-1-1 8.09-8.09 1 1L9.5 15.5z" />
-              <path d="M21 6.5l-4-4-2.12 2.12 4 4L21 6.5zM17 10.5V7c0-.55-.45-1-1-1H8.41L5 2.59 3.59 4 20 20.41 21 19.41V10.5l-4 4v-4z" />
-            </svg>
-          )}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 17c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0-8c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3zM20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" />
+          </svg>
         </PanelButton>
 
         {/* Noise cancellation */}
