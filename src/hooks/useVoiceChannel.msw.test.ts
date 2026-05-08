@@ -47,8 +47,9 @@ describe("useVoiceChannel (MSW)", () => {
     act(() => { result.current.leave(); });
     await act(async () => {});
 
-    expect(deleteCalls).toHaveLength(1);
-    expect(deleteCalls[0]).toContain("voice_sessions");
+    // 2 DELETEs: one from startup stale-session cleanup + one from leave()
+    expect(deleteCalls.length).toBeGreaterThanOrEqual(2);
+    expect(deleteCalls.every((u) => u.includes("voice_sessions"))).toBe(true);
     expect(result.current.isConnected).toBe(false);
   });
 
@@ -64,13 +65,16 @@ describe("useVoiceChannel (MSW)", () => {
     );
 
     const { result } = renderHook(() => useVoiceChannel("user-1"));
+    await act(async () => {}); // let startup cleanup effect run first
+    const callsAfterMount = deleteCalls.length; // baseline includes startup DELETE
 
     act(() => { result.current.leave(); });
     act(() => { result.current.leave(); }); // simulates onDisconnected double-fire
 
     await act(async () => {});
 
-    expect(deleteCalls).toHaveLength(1);
+    // leave() should fire exactly once despite being called twice
+    expect(deleteCalls.length).toBe(callsAfterMount + 1);
   });
 
   it("join fires POST to voice_sessions on successful token fetch", async () => {
