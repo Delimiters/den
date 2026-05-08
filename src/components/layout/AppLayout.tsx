@@ -27,11 +27,15 @@ import { requestNotificationPermission, notify } from "../../utils/desktopNotifi
 import { prefs } from "../../utils/prefs";
 import { QuickSwitcher } from "../ui/QuickSwitcher";
 import { WindowControls } from "./WindowControls";
+import { useDmCallSignaling } from "../../hooks/useDmCallSignaling";
 import type { User, Guild, Channel } from "../../types";
 
 // Lazy-load LiveKit — only pulled in when a voice channel is active
 const VoiceConnection = lazy(() =>
   import("../voice/VoiceChannelView").then((m) => ({ default: m.VoiceConnection }))
+);
+const DmCallView = lazy(() =>
+  import("../voice/DmCallView").then((m) => ({ default: m.DmCallView }))
 );
 
 interface AppLayoutProps {
@@ -72,8 +76,9 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     currentGuild?.owner_id ?? null
   );
 
-  const { voiceChannelId, voiceToken, voiceLivekitUrl, voiceE2eeKey } = useAppStore();
+  const { voiceChannelId, voiceToken, voiceLivekitUrl, voiceE2eeKey, activeDmCall, incomingCall } = useAppStore();
   const { join: joinVoice, leave: leaveVoice } = useVoiceChannel(currentUser.id);
+  const { startCall, acceptCall, declineCall, endCall } = useDmCallSignaling(currentUser);
 
   const { onlineUserIds } = usePresence(currentUser, userStatus);
   useUnreadTracker(currentGuildId);
@@ -300,6 +305,21 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
                 </>
               )}
               <div className="flex-1" />
+              {/* DM call button */}
+              {!isGuildMode && currentDmId && !activeDmCall && (() => {
+                const otherUser = currentDm?.participants.find((p) => p.id !== currentUser.id);
+                return otherUser ? (
+                  <button
+                    onClick={() => startCall(currentDmId, otherUser.id)}
+                    className="w-9 h-9 flex items-center justify-center text-text-muted hover:text-text-primary transition-colors rounded hover:bg-msg-hover"
+                    title={`Call ${otherUser.display_name || otherUser.username}`}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56-.35-.12-.74-.03-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" />
+                    </svg>
+                  </button>
+                ) : null;
+              })()}
               {/* Pinned messages button — guild text channels only */}
               <div className="flex items-center gap-0.5">
               {isGuildMode && currentChannel?.type === "text" && (
@@ -340,6 +360,23 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               />
             )}
 
+            {/* DM call view — rendered above messages when a call is active for this DM */}
+            {!isGuildMode && activeDmCall && activeDmCall.dmChannelId === currentDmId && (() => {
+              return (
+                <Suspense fallback={null}>
+                  <DmCallView
+                    token={activeDmCall.token}
+                    url={activeDmCall.url}
+                    e2eeKey={activeDmCall.e2eeKey}
+                    onHangUp={() => {
+                      const other = currentDm?.participants.find((p) => p.id !== currentUser.id);
+                      if (other && activeDmCall) endCall(activeDmCall.dmChannelId, other.id);
+                      useAppStore.getState().clearActiveDmCall();
+                    }}
+                  />
+                </Suspense>
+              );
+            })()}
             <MessageList
               channelName={channelName}
               channelId={channelId}
@@ -406,6 +443,35 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
       {showQuickSwitcher && <QuickSwitcher onClose={() => setShowQuickSwitcher(false)} />}
+
+      {/* Incoming call banner */}
+      {incomingCall && (
+        <div className="fixed bottom-4 right-4 z-50 bg-overlay border border-divider rounded-lg shadow-2xl p-4 flex items-center gap-4 min-w-[280px]">
+          <div className="flex flex-col gap-0.5 flex-1">
+            <p className="text-text-primary text-sm font-semibold">Incoming call</p>
+            <p className="text-text-muted text-xs">{incomingCall.callerName}</p>
+          </div>
+          <button
+            onClick={declineCall}
+            className="w-8 h-8 rounded-full bg-danger hover:bg-danger/80 flex items-center justify-center text-white transition-colors"
+            title="Decline"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56-.35-.12-.74-.03-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" />
+            </svg>
+          </button>
+          <button
+            onClick={acceptCall}
+            className="w-8 h-8 rounded-full bg-status-online hover:bg-status-online/80 flex items-center justify-center text-white transition-colors"
+            title="Accept"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       <WindowControls />
     </div>
   );
