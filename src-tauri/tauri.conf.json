@@ -55,11 +55,7 @@
     ],
     "macOS": {
       "entitlements": "entitlements.plist",
-      "infoPlist": {
-        "NSCameraUsageDescription": "Den uses your camera for video calls.",
-        "NSMicrophoneUsageDescription": "Den uses your microphone for voice and video calls.",
-        "NSScreenCaptureUsageDescription": "Den uses screen recording so you can share your screen during calls."
-      }
+      "infoPlist": "Info.plist"
     }
   },
   "plugins": {
