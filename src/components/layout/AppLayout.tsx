@@ -24,6 +24,7 @@ import { PinnedMessages, pinMessage } from "../chat/PinnedMessages";
 import { ToastContainer } from "../ui/Toast";
 import { useToasts } from "../../hooks/useToasts";
 import { requestNotificationPermission, notify } from "../../utils/desktopNotification";
+import { prefs } from "../../utils/prefs";
 import { QuickSwitcher } from "../ui/QuickSwitcher";
 import { WindowControls } from "./WindowControls";
 import type { User, Guild, Channel } from "../../types";
@@ -80,7 +81,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
   useDmUnreadTracker(dmChannels, currentUser.id, (payload) => {
     addToast(payload);
-    notify(payload.senderName, payload.preview, payload.senderAvatar);
+    if (prefs.getNotifyDms()) notify(payload.senderName, payload.preview, payload.senderAvatar);
   });
 
   // Request notification permission once on mount
@@ -116,7 +117,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
         preview: newest.content,
         onClick: () => {},
       });
-      notify(`${senderName} mentioned you`, newest.content, author?.avatar_url ?? null);
+      if (prefs.getNotifyMentions()) notify(`${senderName} mentioned you`, newest.content, author?.avatar_url ?? null);
     }
   }, [messages[0]?.id]);
   const activeChannelId = viewMode === "guild" ? currentChannelId : currentDmId;
