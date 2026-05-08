@@ -5,6 +5,11 @@ import { useAppStore } from "../stores/appStore";
 export function useVoiceChannel(currentUserId: string) {
   const { voiceChannelId, setVoiceChannel, clearVoiceChannel } = useAppStore();
 
+  // On mount, clear any stale session left by a previous crash or force-quit
+  useEffect(() => {
+    supabase.from("voice_sessions").delete().eq("user_id", currentUserId).then();
+  }, [currentUserId]);
+
   const join = useCallback(async (channelId: string, guildId: string) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -34,6 +39,7 @@ export function useVoiceChannel(currentUserId: string) {
       user_id: currentUserId,
       channel_id: channelId,
       guild_id: guildId,
+      last_seen: new Date().toISOString(),
     });
   }, [currentUserId, setVoiceChannel]);
 
@@ -43,6 +49,18 @@ export function useVoiceChannel(currentUserId: string) {
     supabase.from("voice_sessions").delete().eq("user_id", currentUserId).then();
     clearVoiceChannel();
   }, [currentUserId, clearVoiceChannel]);
+
+  // Heartbeat: keep last_seen fresh so stale sessions from crashes are detectable
+  useEffect(() => {
+    if (!voiceChannelId) return;
+    const interval = setInterval(() => {
+      supabase.from("voice_sessions")
+        .update({ last_seen: new Date().toISOString() })
+        .eq("user_id", currentUserId)
+        .then();
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [voiceChannelId, currentUserId]);
 
   // Clean up voice session if the component unmounts while connected
   useEffect(() => {

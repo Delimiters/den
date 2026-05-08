@@ -54,7 +54,10 @@ export function ChannelSidebar({
   const textChannels = channels.filter((c) => c.type === "text" && !hasCategories);
   const voiceChannels = channels.filter((c) => c.type === "voice" && !hasCategories);
 
-  // Load + subscribe to voice sessions for the current guild
+  // Load + subscribe to voice sessions for the current guild.
+  // Sessions older than 2 minutes are treated as stale (crash/kill with no cleanup).
+  const freshCutoff = () => new Date(Date.now() - 2 * 60 * 1000).toISOString();
+
   useEffect(() => {
     if (!guild?.id) { setVoiceSessions([]); return; }
 
@@ -62,6 +65,7 @@ export function ChannelSidebar({
       .from("voice_sessions")
       .select("user_id, channel_id, user:users!user_id(username, display_name, avatar_url)")
       .eq("guild_id", guild.id)
+      .gt("last_seen", freshCutoff())
       .then(({ data }) => { if (data) setVoiceSessions(data as unknown as VoiceSession[]); });
 
     const sub = supabase
@@ -70,7 +74,8 @@ export function ChannelSidebar({
         const { data } = await supabase
           .from("voice_sessions")
           .select("user_id, channel_id, user:users!user_id(username, display_name, avatar_url)")
-          .eq("guild_id", guild.id);
+          .eq("guild_id", guild.id)
+          .gt("last_seen", freshCutoff());
         if (data) setVoiceSessions(data as unknown as VoiceSession[]);
       })
       .subscribe();
