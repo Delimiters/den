@@ -9,6 +9,7 @@ import {
 import { ExternalE2EEKeyProvider, RemoteTrackPublication, Track } from "livekit-client";
 import { ParticipantTile, ScreenShareView } from "./ParticipantTile";
 import { VoiceStatusPanel } from "./VoiceStatusPanel";
+import { playJoinSound, playScreenShareSound } from "../../utils/sounds";
 import type { Channel } from "../../types";
 
 interface VoiceChannelViewProps {
@@ -97,13 +98,47 @@ function VoicePortals({
 
   // Subscribed-only: drives the auto-takeover and ScreenShareView rendering
   const screenShareTracks = useTracks([Track.Source.ScreenShare]);
-  // All published (including unsubscribed): drives LIVE badges in the sidebar
+  // All published (including unsubscribed): drives LIVE badges, Watch Stream buttons, and sounds
   const allScreenShareTracks = useTracks([Track.Source.ScreenShare], { onlySubscribed: false });
+  const participants = useParticipants();
 
   const screenShareActive = screenShareTracks.length > 0;
   useEffect(() => {
     onScreenShareChange?.(screenShareActive);
   }, [screenShareActive, onScreenShareChange]);
+
+  // Play join sound when you connect
+  useEffect(() => { playJoinSound(); }, []);
+
+  // Play join sound when someone else joins
+  const prevParticipantIds = useRef<Set<string>>(new Set());
+  const participantsReady = useRef(false);
+  useEffect(() => {
+    const ids = new Set(participants.map((p) => p.identity));
+    if (!participantsReady.current) {
+      prevParticipantIds.current = ids;
+      participantsReady.current = true;
+      return;
+    }
+    const hasNew = [...ids].some((id) => id !== currentUserId && !prevParticipantIds.current.has(id));
+    if (hasNew) playJoinSound();
+    prevParticipantIds.current = ids;
+  }, [participants]);
+
+  // Play screen share sound when anyone in the channel starts sharing
+  const prevScreenShareIds = useRef<Set<string>>(new Set());
+  const screenShareReady = useRef(false);
+  useEffect(() => {
+    const ids = new Set(allScreenShareTracks.map((t) => t.participant.identity));
+    if (!screenShareReady.current) {
+      prevScreenShareIds.current = ids;
+      screenShareReady.current = true;
+      return;
+    }
+    const hasNew = [...ids].some((id) => !prevScreenShareIds.current.has(id));
+    if (hasNew) playScreenShareSound();
+    prevScreenShareIds.current = ids;
+  }, [allScreenShareTracks]);
 
   // Unsubscribe from remote screen shares as soon as they publish — user must opt in via LIVE badge
   useEffect(() => {
