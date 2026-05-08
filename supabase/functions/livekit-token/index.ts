@@ -17,7 +17,6 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return new Response("Unauthorized", { status: 401, headers: CORS });
 
-  // Validate the caller — use anon client with user's auth header so RLS works
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -28,64 +27,70 @@ Deno.serve(async (req) => {
   );
   if (authError || !user) return new Response("Unauthorized", { status: 401, headers: CORS });
 
-  const { channelId, guildId } = await req.json();
-  if (!channelId || !guildId) {
-    return new Response("Missing channelId or guildId", { status: 400, headers: CORS });
+  const body = await req.json();
+  const { channelId, guildId, dmChannelId } = body;
+
+  let roomName: string;
+
+  if (dmChannelId) {
+    // DM call — verify the caller is a participant in this DM channel
+    const { data: participation } = await supabase
+      .from("dm_participants")
+      .select("user_id")
+      .eq("channel_id", dmChannelId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!participation) return new Response("Forbidden", { status: 403, headers: CORS });
+
+    roomName = `dm-${dmChannelId}`;
+  } else if (channelId && guildId) {
+    // Guild voice channel — verify guild membership
+    const { data: membership } = await supabase
+      .from("guild_members")
+      .select("user_id")
+      .eq("guild_id", guildId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) return new Response("Forbidden", { status: 403, headers: CORS });
+
+    roomName = `guild-${guildId}-channel-${channelId}`;
+  } else {
+    return new Response("Missing channelId+guildId or dmChannelId", { status: 400, headers: CORS });
   }
 
-  // Verify user is a member of the guild
-  const { data: membership } = await supabase
-    .from("guild_members")
-    .select("user_id")
-    .eq("guild_id", guildId)
-    .eq("user_id", user.id)
-    .single();
-
-  if (!membership) {
-    return new Response("Forbidden", { status: 403, headers: CORS });
-  }
-
-  // Fetch the user's display name for the participant identity label
   const { data: profile } = await supabase
     .from("users")
     .select("username, display_name")
     .eq("id", user.id)
     .single();
 
-  const roomName = `guild-${guildId}-channel-${channelId}`;
   const identity = user.id;
   const participantName = profile?.display_name || profile?.username || identity;
 
-  // Ensure the room exists (creates it if not, no-ops if it does)
   const roomService = new RoomServiceClient(LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET);
   try {
     await roomService.createRoom({
       name: roomName,
-      emptyTimeout: 300, // room stays open 5 min after last participant leaves
-      maxParticipants: 100,
+      emptyTimeout: 300,
+      maxParticipants: dmChannelId ? 2 : 100,
     });
   } catch {
-    // Room likely already exists — that's fine
+    // Room already exists
   }
 
-  // Generate participant token
   const token = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
     identity,
     name: participantName,
     ttl: TOKEN_TTL_SECONDS,
   });
 
-  token.addGrant({
-    roomJoin: true,
-    room: roomName,
-    canPublish: true,
-    canSubscribe: true,
-  });
+  token.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true });
 
   const jwt = await token.toJwt();
 
-  // Derive a deterministic per-room E2EE key: HMAC-SHA256(secret, roomName).
-  // Every authorized participant derives the same key without any storage.
+  // Per-room E2EE key: HMAC-SHA256(secret, roomName)
   const secretKey = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(LIVEKIT_API_SECRET),

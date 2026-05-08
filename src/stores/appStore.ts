@@ -59,6 +59,13 @@ interface AppStore {
   voiceE2eeKey: string | null;
   setVoiceChannel: (channelId: string, token: string, url: string, e2eeKey: string | null) => void;
   clearVoiceChannel: () => void;
+
+  // DM calls
+  incomingCall: { dmChannelId: string; callerId: string; callerName: string; callerAvatar: string | null } | null;
+  activeDmCall: { dmChannelId: string; token: string; url: string; e2eeKey: string | null } | null;
+  setIncomingCall: (call: AppStore["incomingCall"]) => void;
+  setActiveDmCall: (call: AppStore["activeDmCall"]) => void;
+  clearActiveDmCall: () => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -164,4 +171,10 @@ export const useAppStore = create<AppStore>((set) => ({
     set({ voiceChannelId: channelId, voiceToken: token, voiceLivekitUrl: url, voiceE2eeKey: e2eeKey }),
   clearVoiceChannel: () =>
     set({ voiceChannelId: null, voiceToken: null, voiceLivekitUrl: null, voiceE2eeKey: null }),
+
+  incomingCall: null,
+  activeDmCall: null,
+  setIncomingCall: (call) => set({ incomingCall: call }),
+  setActiveDmCall: (call) => set({ activeDmCall: call }),
+  clearActiveDmCall: () => set({ activeDmCall: null }),
 }));
