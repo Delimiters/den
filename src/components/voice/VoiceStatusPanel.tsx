@@ -193,10 +193,25 @@ export function VoiceStatusPanel({ channelName, onLeave, onWatchScreenShare }: V
           </svg>
         </PanelButton>
 
-        {/* Camera — photo camera icon with lens, active color when on */}
+        {/* Camera — classic movie camera: reel on top, body, lens ring */}
         <PanelButton onClick={toggleCamera} title={isCameraOn ? "Turn off camera" : "Turn on camera"} active={isCameraOn}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 17c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0-8c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3zM20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" />
+            {/* Camera body with lens (evenodd: body filled, outer lens ring = glass hole, inner dot = aperture) */}
+            <path
+              fillRule="evenodd"
+              d="M1 10h20a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1z
+                 M13 13a4 4 0 1 0 0 8 4 4 0 0 0 0-8z
+                 M13 15a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"
+            />
+            {/* Film reel — prominent circle mounted on top of body */}
+            <path
+              fillRule="evenodd"
+              d="M7 1a5 5 0 1 0 0 10A5 5 0 0 0 7 1z
+                 M7 4a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z
+                 M7 5.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"
+            />
+            {/* Record indicator dot */}
+            <circle cx="3.5" cy="13" r="1.5"/>
           </svg>
         </PanelButton>
 
