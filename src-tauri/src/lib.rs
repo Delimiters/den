@@ -76,6 +76,38 @@ pub fn run() {
             #[cfg(target_os = "windows")]
             let _ = window.set_decorations(false);
 
+            // Auto-grant camera and microphone permissions so getUserMedia works in WebView2.
+            // Without this handler, WebView2 silently denies media requests with NotAllowedError.
+            #[cfg(target_os = "windows")]
+            {
+                use webview2_com::{
+                    Microsoft::Web::WebView2::Win32::{
+                        COREWEBVIEW2_PERMISSION_KIND_CAMERA,
+                        COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
+                        COREWEBVIEW2_PERMISSION_STATE_ALLOW,
+                    },
+                    PermissionRequestedEventHandler,
+                };
+                let _ = window.with_webview(|wv| unsafe {
+                    let controller = wv.controller();
+                    if let Ok(webview) = controller.CoreWebView2() {
+                        let _ = webview.add_PermissionRequested(
+                            &PermissionRequestedEventHandler::create(Box::new(|_, args| {
+                                if let Some(args) = args {
+                                    let kind = args.PermissionKind()?;
+                                    if kind == COREWEBVIEW2_PERMISSION_KIND_MICROPHONE
+                                        || kind == COREWEBVIEW2_PERMISSION_KIND_CAMERA
+                                    {
+                                        args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW)?;
+                                    }
+                                }
+                                Ok(())
+                            })),
+                        );
+                    }
+                });
+            }
+
             // Minimize to tray instead of closing
             let window_clone = window.clone();
             window.on_window_event(move |event| {
