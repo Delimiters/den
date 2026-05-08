@@ -1,18 +1,20 @@
 import { useState } from "react";
-import { useLocalParticipant, useTracks } from "@livekit/components-react";
+import { useLocalParticipant, useParticipants, useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { prefs } from "../../utils/prefs";
 
 interface VoiceStatusPanelProps {
   channelName: string;
   onLeave: () => void;
+  onViewVoiceChannel?: () => void;
 }
 
-export function VoiceStatusPanel({ channelName, onLeave }: VoiceStatusPanelProps) {
+export function VoiceStatusPanel({ channelName, onLeave, onViewVoiceChannel }: VoiceStatusPanelProps) {
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant();
   const [isDeafened, setIsDeafened] = useState(false);
   const [noiseCancellation, setNoiseCancellation] = useState(prefs.getNoiseCancellation);
 
+  const participants = useParticipants();
   const screenShareTracks = useTracks([Track.Source.ScreenShare], { onlySubscribed: false });
   const cameraTracks = useTracks([Track.Source.Camera], { onlySubscribed: false });
   const isScreenSharing = screenShareTracks.some((t) => t.participant.isLocal);
@@ -89,6 +91,40 @@ export function VoiceStatusPanel({ channelName, onLeave }: VoiceStatusPanelProps
         </svg>
         <span className="text-text-muted text-xs truncate">{channelName}</span>
       </div>
+
+      {/* Participant list */}
+      {participants.length > 0 && (
+        <div className="px-2 pb-1 flex flex-col gap-0.5 max-h-36 overflow-y-auto">
+          {participants.map((p) => {
+            const hasCam = cameraTracks.some((t) => t.participant.identity === p.identity);
+            const hasScreen = screenShareTracks.some((t) => t.participant.identity === p.identity);
+            const initials = (p.name || p.identity).slice(0, 1).toUpperCase();
+            return (
+              <div key={p.identity} className="flex items-center gap-1.5 px-1 py-0.5 rounded hover:bg-white/5">
+                <div className="w-5 h-5 rounded-full bg-accent/30 flex items-center justify-center shrink-0 text-[9px] font-bold text-accent">
+                  {initials}
+                </div>
+                <span className="text-text-secondary text-xs truncate flex-1">{p.name || p.identity}</span>
+                {hasCam && (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted shrink-0">
+                    <title>Camera on</title>
+                    <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
+                  </svg>
+                )}
+                {hasScreen && (
+                  <button
+                    onClick={onViewVoiceChannel}
+                    className="text-[9px] font-bold px-1 py-0.5 bg-red-500 hover:bg-red-400 text-white rounded leading-none shrink-0 transition-colors"
+                    title="View screen share"
+                  >
+                    LIVE
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Controls row */}
       <div className="px-2 pb-2 flex items-center gap-0.5">

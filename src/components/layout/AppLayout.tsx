@@ -99,6 +99,8 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   }, [unreadCount]);
 
   const voicePanelRef = useRef<HTMLDivElement>(null);
+  const [voiceContentEl, setVoiceContentEl] = useState<HTMLDivElement | null>(null);
+  const [screenShareActive, setScreenShareActive] = useState(false);
 
   // Toast + desktop notification on @mention in guild channels
   const messages = useAppStore((s) => s.messages);
@@ -201,11 +203,13 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     channels.filter((c) => unread[c.id]).map((c) => c.guild_id)
   );
 
+  const isGuildMode = viewMode === "guild";
   const currentChannel = channels.find((c) => c.id === currentChannelId);
+  const voiceChannel = channels.find((c) => c.id === voiceChannelId);
+  // Show voice grid when viewing the connected voice channel OR when screen share is active
+  const showVoiceGrid = !!(isGuildMode && voiceChannelId && (currentChannelId === voiceChannelId || screenShareActive));
   const currentDm = dmChannels.find((d) => d.id === currentDmId);
   const dmPartner = currentDm?.participants[0];
-
-  const isGuildMode = viewMode === "guild";
   const sendFn = isGuildMode
     ? (content: string, files?: File[], replyToId?: string | null) => sendMessage(content, currentUser.id, files, replyToId)
     : (content: string, files?: File[], replyToId?: string | null) => sendDm(content, currentUser.id, files, replyToId);
@@ -247,8 +251,13 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           onChannelSelect={(id) => {
             const ch = channels.find((c) => c.id === id);
             if (ch?.type === "voice") {
-              // Join voice in-place — don't navigate away from the current text channel
-              if (currentGuildId) joinVoice(id, currentGuildId);
+              if (voiceChannelId === id) {
+                // Already connected to this channel — second click shows the participant grid
+                setCurrentChannel(id);
+              } else {
+                // First click: join silently without navigating away from current text channel
+                if (currentGuildId) joinVoice(id, currentGuildId);
+              }
             } else {
               setCurrentChannel(id);
             }
@@ -274,23 +283,34 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Voice connection — keeps LiveKit audio alive while text chat stays visible */}
-        {isGuildMode && voiceChannelId && voiceToken && voiceLivekitUrl && (() => {
-          const voiceCh = channels.find((c) => c.id === voiceChannelId);
-          return voiceCh ? (
-            <Suspense fallback={null}>
-              <VoiceConnection
-                token={voiceToken}
-                livekitUrl={voiceLivekitUrl}
-                e2eeKey={voiceE2eeKey}
-                channel={voiceCh}
-                voicePanelRef={voicePanelRef}
-                onLeave={leaveVoice}
-              />
-            </Suspense>
-          ) : null;
-        })()}
-        {hasContent ? (
+        {/* Voice connection — keeps LiveKit audio alive regardless of what's shown in main content */}
+        {isGuildMode && voiceChannelId && voiceToken && voiceLivekitUrl && voiceChannel && (
+          <Suspense fallback={null}>
+            <VoiceConnection
+              token={voiceToken}
+              livekitUrl={voiceLivekitUrl}
+              e2eeKey={voiceE2eeKey}
+              channel={voiceChannel}
+              currentUserId={currentUser.id}
+              voicePanelRef={voicePanelRef}
+              contentEl={voiceContentEl}
+              onLeave={leaveVoice}
+              onScreenShareChange={setScreenShareActive}
+              onViewVoiceChannel={() => setCurrentChannel(voiceChannelId)}
+            />
+          </Suspense>
+        )}
+        {showVoiceGrid ? (
+          <>
+            <div data-tauri-drag-region className="h-14 pl-8 pr-3 flex items-center gap-1.5 border-b border-divider shrink-0 shadow-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted shrink-0">
+                <path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z" />
+              </svg>
+              <h3 className="text-text-primary font-semibold text-base">{voiceChannel?.name ?? ""}</h3>
+            </div>
+            <div ref={setVoiceContentEl} className="flex-1 flex flex-col min-h-0 overflow-hidden" />
+          </>
+        ) : hasContent ? (
           <>
             <div data-tauri-drag-region className="h-14 pl-8 pr-3 flex items-center gap-1.5 border-b border-divider shrink-0 shadow-sm">
               {isGuildMode ? (
@@ -411,6 +431,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
             </p>
           </div>
         )}
+
       </div>
 
       {/* Member list (guild mode only) */}
