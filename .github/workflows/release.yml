@@ -129,6 +129,7 @@ jobs:
             > you'll need to clone the repo, add your own `.env.local`, and build from source.
           releaseDraft: true
           prerelease: false
+          updaterJsonKeepUniversal: true
           args: --target ${{ matrix.target }}
 
   publish:
