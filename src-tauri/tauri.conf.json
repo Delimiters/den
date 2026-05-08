@@ -12,6 +12,17 @@
   "app": {
     "windows": [
       {
+        "label": "splashscreen",
+        "title": "Den",
+        "width": 300,
+        "height": 380,
+        "resizable": false,
+        "decorations": false,
+        "center": true,
+        "backgroundColor": "#1e1f22"
+      },
+      {
+        "label": "main",
         "title": "Den",
         "width": 1100,
         "height": 720,
@@ -19,7 +30,8 @@
         "minHeight": 500,
         "titleBarStyle": "Overlay",
         "theme": "Dark",
-        "backgroundColor": "#313338"
+        "backgroundColor": "#313338",
+        "visible": false
       }
     ],
     "security": {
