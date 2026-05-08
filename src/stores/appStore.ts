@@ -56,7 +56,8 @@ interface AppStore {
   voiceChannelId: string | null;
   voiceToken: string | null;
   voiceLivekitUrl: string | null;
-  setVoiceChannel: (channelId: string, token: string, url: string) => void;
+  voiceE2eeKey: string | null;
+  setVoiceChannel: (channelId: string, token: string, url: string, e2eeKey: string | null) => void;
   clearVoiceChannel: () => void;
 }
 
@@ -158,8 +159,9 @@ export const useAppStore = create<AppStore>((set) => ({
   voiceChannelId: null,
   voiceToken: null,
   voiceLivekitUrl: null,
-  setVoiceChannel: (channelId, token, url) =>
-    set({ voiceChannelId: channelId, voiceToken: token, voiceLivekitUrl: url }),
+  voiceE2eeKey: null,
+  setVoiceChannel: (channelId, token, url, e2eeKey) =>
+    set({ voiceChannelId: channelId, voiceToken: token, voiceLivekitUrl: url, voiceE2eeKey: e2eeKey }),
   clearVoiceChannel: () =>
-    set({ voiceChannelId: null, voiceToken: null, voiceLivekitUrl: null }),
+    set({ voiceChannelId: null, voiceToken: null, voiceLivekitUrl: null, voiceE2eeKey: null }),
 }));

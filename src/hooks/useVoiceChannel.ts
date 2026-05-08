@@ -26,8 +26,8 @@ export function useVoiceChannel(currentUserId: string) {
       return;
     }
 
-    const { token, url } = await res.json();
-    setVoiceChannel(channelId, token, url);
+    const { token, url, e2eeKey } = await res.json();
+    setVoiceChannel(channelId, token, url, e2eeKey ?? null);
 
     // Track presence in voice_sessions
     await supabase.from("voice_sessions").upsert({

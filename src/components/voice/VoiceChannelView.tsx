@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   LiveKitRoom,
@@ -6,7 +6,7 @@ import {
   useParticipants,
   useTracks,
 } from "@livekit/components-react";
-import { Track } from "livekit-client";
+import { ExternalE2EEKeyProvider, Track } from "livekit-client";
 import { ParticipantTile, ScreenShareView } from "./ParticipantTile";
 import { VoiceStatusPanel } from "./VoiceStatusPanel";
 import type { Channel } from "../../types";
@@ -14,24 +14,42 @@ import type { Channel } from "../../types";
 interface VoiceChannelViewProps {
   token: string;
   livekitUrl: string;
+  e2eeKey: string | null;
   channel: Channel;
   currentUserId: string;
   voicePanelRef: React.RefObject<HTMLDivElement | null>;
   onLeave: () => void;
 }
 
+function useE2EEOptions(e2eeKey: string | null) {
+  return useMemo(() => {
+    if (!e2eeKey || typeof SharedArrayBuffer === "undefined") return undefined;
+    try {
+      const keyProvider = new ExternalE2EEKeyProvider();
+      keyProvider.setKey(e2eeKey);
+      const worker = new Worker(new URL("livekit-client/e2ee-worker", import.meta.url), { type: "module" });
+      return { keyProvider, worker };
+    } catch {
+      console.warn("[E2EE] Failed to initialize voice encryption — connecting without it");
+      return undefined;
+    }
+  }, [e2eeKey]);
+}
+
 /** Minimal mount that keeps the LiveKit room connected and portals the sidebar status panel. */
-export function VoiceConnection({ token, livekitUrl, channel, voicePanelRef, onLeave }: Omit<VoiceChannelViewProps, "currentUserId">) {
+export function VoiceConnection({ token, livekitUrl, e2eeKey, channel, voicePanelRef, onLeave }: Omit<VoiceChannelViewProps, "currentUserId">) {
   const onLeaveRef = useRef(onLeave);
   onLeaveRef.current = onLeave;
   useEffect(() => { return () => { onLeaveRef.current(); }; }, []);
+
+  const e2ee = useE2EEOptions(e2eeKey);
 
   return (
     <LiveKitRoom
       token={token}
       serverUrl={livekitUrl}
       connect={true}
-      options={{ disconnectOnPageLeave: true }}
+      options={{ disconnectOnPageLeave: true, ...(e2ee ? { encryption: e2ee } : {}) }}
       onDisconnected={onLeave}
     >
       <RoomAudioRenderer />
@@ -45,7 +63,7 @@ function VoiceSidebarPortal({ channelName, voicePanelRef, onLeave }: { channelNa
   return createPortal(<VoiceStatusPanel channelName={channelName} onLeave={onLeave} />, voicePanelRef.current);
 }
 
-export function VoiceChannelView({ token, livekitUrl, channel, currentUserId, voicePanelRef, onLeave }: VoiceChannelViewProps) {
+export function VoiceChannelView({ token, livekitUrl, e2eeKey, channel, currentUserId, voicePanelRef, onLeave }: VoiceChannelViewProps) {
   const onLeaveRef = useRef(onLeave);
   onLeaveRef.current = onLeave;
 
@@ -53,12 +71,14 @@ export function VoiceChannelView({ token, livekitUrl, channel, currentUserId, vo
     return () => { onLeaveRef.current(); };
   }, []);
 
+  const e2ee = useE2EEOptions(e2eeKey);
+
   return (
     <LiveKitRoom
       token={token}
       serverUrl={livekitUrl}
       connect={true}
-      options={{ disconnectOnPageLeave: true }}
+      options={{ disconnectOnPageLeave: true, ...(e2ee ? { encryption: e2ee } : {}) }}
       onDisconnected={onLeave}
       className="flex-1 flex flex-col min-h-0"
     >

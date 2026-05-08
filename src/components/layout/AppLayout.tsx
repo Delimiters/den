@@ -71,7 +71,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
     currentGuild?.owner_id ?? null
   );
 
-  const { voiceChannelId, voiceToken, voiceLivekitUrl } = useAppStore();
+  const { voiceChannelId, voiceToken, voiceLivekitUrl, voiceE2eeKey } = useAppStore();
   const { join: joinVoice, leave: leaveVoice } = useVoiceChannel(currentUser.id);
 
   const { onlineUserIds } = usePresence(currentUser, userStatus);
@@ -276,6 +276,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               <VoiceConnection
                 token={voiceToken}
                 livekitUrl={voiceLivekitUrl}
+                e2eeKey={voiceE2eeKey}
                 channel={voiceCh}
                 voicePanelRef={voicePanelRef}
                 onLeave={leaveVoice}

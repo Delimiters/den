@@ -137,12 +137,13 @@ describe("message mutations", () => {
 });
 
 describe("voice state", () => {
-  it("setVoiceChannel stores all three fields", () => {
-    useAppStore.getState().setVoiceChannel("ch-1", "jwt-token", "wss://lk.cloud");
-    const { voiceChannelId, voiceToken, voiceLivekitUrl } = useAppStore.getState();
+  it("setVoiceChannel stores all fields", () => {
+    useAppStore.getState().setVoiceChannel("ch-1", "jwt-token", "wss://lk.cloud", "base64key==");
+    const { voiceChannelId, voiceToken, voiceLivekitUrl, voiceE2eeKey } = useAppStore.getState();
     expect(voiceChannelId).toBe("ch-1");
     expect(voiceToken).toBe("jwt-token");
     expect(voiceLivekitUrl).toBe("wss://lk.cloud");
+    expect(voiceE2eeKey).toBe("base64key==");
   });
 
   it("clearVoiceChannel nulls all voice fields", () => {

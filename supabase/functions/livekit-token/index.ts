@@ -84,8 +84,20 @@ Deno.serve(async (req) => {
 
   const jwt = await token.toJwt();
 
+  // Derive a deterministic per-room E2EE key: HMAC-SHA256(secret, roomName).
+  // Every authorized participant derives the same key without any storage.
+  const secretKey = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(LIVEKIT_API_SECRET),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const keyBytes = await crypto.subtle.sign("HMAC", secretKey, new TextEncoder().encode(roomName));
+  const e2eeKey = btoa(String.fromCharCode(...new Uint8Array(keyBytes)));
+
   return new Response(
-    JSON.stringify({ token: jwt, url: LIVEKIT_URL }),
+    JSON.stringify({ token: jwt, url: LIVEKIT_URL, e2eeKey }),
     { headers: { ...CORS, "Content-Type": "application/json" } }
   );
 });
