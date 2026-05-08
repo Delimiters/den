@@ -136,7 +136,7 @@ function VoicePortals({
 
   const main = contentEl
     ? createPortal(
-        <VoiceRoomGrid channelName={channelName} currentUserId={currentUserId} />,
+        <VoiceRoomGrid channelName={channelName} currentUserId={currentUserId} onWatchScreenShare={watchScreenShare} />,
         contentEl
       )
     : null;
@@ -144,9 +144,14 @@ function VoicePortals({
   return <>{sidebar}{main}</>;
 }
 
-function VoiceRoomGrid({ channelName, currentUserId }: { channelName: string; currentUserId: string }) {
+function VoiceRoomGrid({ channelName, currentUserId, onWatchScreenShare }: {
+  channelName: string;
+  currentUserId: string;
+  onWatchScreenShare?: (identity: string) => void;
+}) {
   const participants = useParticipants();
   const screenShareTracks = useTracks([Track.Source.ScreenShare]);
+  const allScreenShareTracks = useTracks([Track.Source.ScreenShare], { onlySubscribed: false });
   const cameraTracks = useTracks([Track.Source.Camera]);
   const hasScreenShare = screenShareTracks.length > 0;
 
@@ -163,14 +168,34 @@ function VoiceRoomGrid({ channelName, currentUserId }: { channelName: string; cu
       {hasScreenShare && <ScreenShareView trackRef={screenShareTracks[0]} />}
 
       <div className={`flex flex-wrap gap-3 ${hasScreenShare ? "" : "flex-1 content-start"}`}>
-        {participants.map((participant) => (
-          <ParticipantTile
-            key={participant.identity}
-            participant={participant}
-            cameraTrackRef={cameraTracks.find((t) => t.participant.identity === participant.identity)}
-            isLocal={participant.identity === currentUserId}
-          />
-        ))}
+        {participants.map((participant) => {
+          const isWatchable = !participant.isLocal &&
+            allScreenShareTracks.some((t) => t.participant.identity === participant.identity) &&
+            !screenShareTracks.some((t) => t.participant.identity === participant.identity);
+
+          return (
+            <div key={participant.identity} className="relative">
+              <ParticipantTile
+                participant={participant}
+                cameraTrackRef={cameraTracks.find((t) => t.participant.identity === participant.identity)}
+                isLocal={participant.identity === currentUserId}
+              />
+              {isWatchable && (
+                <div className="absolute inset-0 flex items-end justify-center pb-2 rounded-lg bg-black/40 pointer-events-none">
+                  <button
+                    onClick={() => onWatchScreenShare?.(participant.identity)}
+                    className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent/80 text-white text-xs font-semibold rounded-full transition-colors shadow-lg"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zm-7-3.53v-2.19c-2.78.48-4.34 1.71-5.5 3.72.14-1.37.49-4.4 3.28-6.31l-.78-.78V7.5L14 11l-1.5 2.47-.5-3z" />
+                    </svg>
+                    Watch Stream
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
         {participants.length === 0 && (
           <div className="flex-1 flex items-center justify-center min-h-[200px]">
             <p className="text-text-muted text-sm">Connecting…</p>
