@@ -118,19 +118,20 @@ pub fn run() {
                 let _ = window.with_webview(|wv| unsafe {
                     let controller = wv.controller();
                     if let Ok(webview) = controller.CoreWebView2() {
-                        let _ = webview.add_PermissionRequested(
-                            &PermissionRequestedEventHandler::create(Box::new(|_, args| {
-                                if let Some(args) = args {
-                                    let kind = args.PermissionKind()?;
-                                    if kind == COREWEBVIEW2_PERMISSION_KIND_MICROPHONE
-                                        || kind == COREWEBVIEW2_PERMISSION_KIND_CAMERA
-                                    {
-                                        args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW)?;
-                                    }
+                        let handler = PermissionRequestedEventHandler::create(Box::new(|_, args| {
+                            if let Some(args) = args {
+                                let mut kind = COREWEBVIEW2_PERMISSION_KIND_CAMERA; // placeholder
+                                args.PermissionKind(&mut kind)?;
+                                if kind == COREWEBVIEW2_PERMISSION_KIND_MICROPHONE
+                                    || kind == COREWEBVIEW2_PERMISSION_KIND_CAMERA
+                                {
+                                    args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW)?;
                                 }
-                                Ok(())
-                            })),
-                        );
+                            }
+                            Ok(())
+                        }));
+                        let mut token: i64 = 0;
+                        let _ = webview.add_PermissionRequested(handler, &mut token);
                     }
                 });
             }
