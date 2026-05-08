@@ -1,6 +1,6 @@
 # Den
 
-**Open-source, privacy-focused voice and text chat for communities.**
+**[Download Den](https://delimiters.github.io/den/) · Open-source, privacy-focused voice and text chat for communities.**
 
 Den is a self-hostable chat platform built for gaming groups and online communities. It gives you real-time text messaging, voice channels with screen sharing, direct messages, and server organization — with full control over your data and no vendor lock-in.
 
