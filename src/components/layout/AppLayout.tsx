@@ -28,6 +28,7 @@ import { prefs } from "../../utils/prefs";
 import { QuickSwitcher } from "../ui/QuickSwitcher";
 import { WindowControls } from "./WindowControls";
 import { useDmCallSignaling } from "../../hooks/useDmCallSignaling";
+import { isTauri, invoke } from "@tauri-apps/api/core";
 import type { User, Guild, Channel } from "../../types";
 
 // Lazy-load LiveKit — only pulled in when a voice channel is active
@@ -91,6 +92,13 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
   // Request notification permission once on mount
   useEffect(() => { requestNotificationPermission(); }, []);
+
+  // Sync close-behavior preference to Rust on mount
+  useEffect(() => {
+    if (isTauri()) {
+      invoke("set_minimize_to_tray", { value: prefs.getMinimizeToTray() }).catch(() => {});
+    }
+  }, []);
 
   // Update window title with unread count
   const unreadCount = Object.keys(unread).length;
