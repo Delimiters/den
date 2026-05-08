@@ -104,7 +104,7 @@ export function VoiceStatusPanel({ channelName, onLeave, onWatchScreenShare }: V
   }
 
   return (
-    <div className="bg-overlay border-t border-divider shrink-0">
+    <div data-testid="voice-status-panel" className="bg-overlay border-t border-divider shrink-0">
       {/* Connected indicator */}
       <div className="px-3 pt-2 pb-1 flex items-center gap-2">
         <span className="w-2 h-2 rounded-full bg-status-online shrink-0" />

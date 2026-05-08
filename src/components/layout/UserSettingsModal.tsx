@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type ChangeEvent } from "react";
 import { isTauri } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { supabase } from "../../lib/supabase";
 import { useAppStore } from "../../stores/appStore";
 import { Avatar } from "../ui/Avatar";
@@ -7,7 +8,7 @@ import { prefs } from "../../utils/prefs";
 import { requestNotificationPermission } from "../../utils/desktopNotification";
 import type { User } from "../../types";
 
-type Tab = "profile" | "audio" | "notifications" | "about";
+type Tab = "profile" | "audio" | "notifications" | "app" | "about";
 
 interface UserSettingsModalProps {
   currentUser: User;
@@ -18,6 +19,7 @@ const TAB_LABELS: Record<Tab, string> = {
   profile: "Profile",
   audio: "Audio & Video",
   notifications: "Notifications",
+  app: "App",
   about: "About",
 };
 
@@ -56,6 +58,7 @@ export function UserSettingsModal({ currentUser, onClose }: UserSettingsModalPro
         {tab === "profile" && <ProfileTab currentUser={currentUser} onClose={onClose} />}
         {tab === "audio" && <AudioTab />}
         {tab === "notifications" && <NotificationsTab />}
+        {tab === "app" && <AppTab />}
         {tab === "about" && <AboutTab />}
       </div>
     </div>
@@ -217,6 +220,37 @@ function DeviceSelect({ label, options, value, onChange }: { label: string; kind
           <option key={d.deviceId} value={d.deviceId}>{d.label || d.deviceId}</option>
         ))}
       </select>
+    </div>
+  );
+}
+
+// ─── App ─────────────────────────────────────────────────────────────────────
+
+function AppTab() {
+  const [minimizeToTray, setMinimizeToTray] = useState(prefs.getMinimizeToTray());
+
+  async function handleMinimizeToTray(v: boolean) {
+    setMinimizeToTray(v);
+    prefs.setMinimizeToTray(v);
+    if (isTauri()) {
+      await invoke("set_minimize_to_tray", { value: v }).catch(() => {});
+    }
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+      <h2 className="text-text-primary font-bold text-lg">App</h2>
+
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-text-primary text-sm font-medium">Minimize to tray on close</p>
+          <p className="text-text-muted text-xs mt-0.5">
+            When enabled, closing the window keeps Den running in the system tray.
+            Disable to quit Den when you close the window.
+          </p>
+        </div>
+        <Toggle value={minimizeToTray} onChange={handleMinimizeToTray} />
+      </div>
     </div>
   );
 }
