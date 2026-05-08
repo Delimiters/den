@@ -38,7 +38,7 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app (debug, no installer)
-        run: npm run tauri build -- --debug --bundles none --target x86_64-pc-windows-msvc
+        run: npm run tauri build -- --debug --no-bundle --target x86_64-pc-windows-msvc
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
