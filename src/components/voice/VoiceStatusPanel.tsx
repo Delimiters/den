@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocalParticipant, useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
+import { prefs } from "../../utils/prefs";
 
 interface VoiceStatusPanelProps {
   channelName: string;
@@ -10,7 +11,7 @@ interface VoiceStatusPanelProps {
 export function VoiceStatusPanel({ channelName, onLeave }: VoiceStatusPanelProps) {
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant();
   const [isDeafened, setIsDeafened] = useState(false);
-  const [noiseCancellation, setNoiseCancellation] = useState(true);
+  const [noiseCancellation, setNoiseCancellation] = useState(prefs.getNoiseCancellation);
 
   const screenShareTracks = useTracks([Track.Source.ScreenShare], { onlySubscribed: false });
   const isScreenSharing = screenShareTracks.some((t) => t.participant.isLocal);
@@ -42,6 +43,7 @@ export function VoiceStatusPanel({ channelName, onLeave }: VoiceStatusPanelProps
   async function toggleNC() {
     const next = !noiseCancellation;
     setNoiseCancellation(next);
+    prefs.setNoiseCancellation(next);
     if (isMicrophoneEnabled) {
       await localParticipant.setMicrophoneEnabled(false);
       await localParticipant.setMicrophoneEnabled(true, {
