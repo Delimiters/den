@@ -18,7 +18,13 @@ interface VoiceChannelViewProps {
   channel: Channel;
   currentUserId: string;
   voicePanelRef: React.RefObject<HTMLDivElement | null>;
+  /** Where to portal the participant grid. When null, only audio is kept alive. */
+  contentEl: HTMLDivElement | null;
   onLeave: () => void;
+  /** Fires whenever screen share track count changes. Used by AppLayout to force the voice view. */
+  onScreenShareChange?: (active: boolean) => void;
+  /** Called when a participant's LIVE badge is clicked — navigates to the voice channel view. */
+  onViewVoiceChannel?: () => void;
 }
 
 function useE2EEOptions(e2eeKey: string | null) {
@@ -36,8 +42,16 @@ function useE2EEOptions(e2eeKey: string | null) {
   }, [e2eeKey]);
 }
 
-/** Minimal mount that keeps the LiveKit room connected and portals the sidebar status panel. */
-export function VoiceConnection({ token, livekitUrl, e2eeKey, channel, voicePanelRef, onLeave }: Omit<VoiceChannelViewProps, "currentUserId">) {
+/**
+ * Mounts the LiveKit room for the duration of a voice connection.
+ * Always portals a tiny status panel into the sidebar (`voicePanelRef`).
+ * Portals the participant grid + screen share view into `contentRef` when provided —
+ * AppLayout supplies it when the user is viewing the voice channel or when a screen share is active.
+ */
+export function VoiceConnection({
+  token, livekitUrl, e2eeKey, channel, currentUserId,
+  voicePanelRef, contentEl, onLeave, onScreenShareChange, onViewVoiceChannel,
+}: VoiceChannelViewProps) {
   const onLeaveRef = useRef(onLeave);
   onLeaveRef.current = onLeave;
   useEffect(() => { return () => { onLeaveRef.current(); }; }, []);
@@ -53,102 +67,83 @@ export function VoiceConnection({ token, livekitUrl, e2eeKey, channel, voicePane
       onDisconnected={onLeave}
     >
       <RoomAudioRenderer />
-      <VoiceSidebarPortal channelName={channel.name} voicePanelRef={voicePanelRef} onLeave={onLeave} />
-    </LiveKitRoom>
-  );
-}
-
-function VoiceSidebarPortal({ channelName, voicePanelRef, onLeave }: { channelName: string; voicePanelRef: React.RefObject<HTMLDivElement | null>; onLeave: () => void }) {
-  if (!voicePanelRef.current) return null;
-  return createPortal(<VoiceStatusPanel channelName={channelName} onLeave={onLeave} />, voicePanelRef.current);
-}
-
-export function VoiceChannelView({ token, livekitUrl, e2eeKey, channel, currentUserId, voicePanelRef, onLeave }: VoiceChannelViewProps) {
-  const onLeaveRef = useRef(onLeave);
-  onLeaveRef.current = onLeave;
-
-  useEffect(() => {
-    return () => { onLeaveRef.current(); };
-  }, []);
-
-  const e2ee = useE2EEOptions(e2eeKey);
-
-  return (
-    <LiveKitRoom
-      token={token}
-      serverUrl={livekitUrl}
-      connect={true}
-      options={{ disconnectOnPageLeave: true, ...(e2ee ? { encryption: e2ee } : {}) }}
-      onDisconnected={onLeave}
-      className="flex-1 flex flex-col min-h-0"
-    >
-      <VoiceRoomContent
+      <VoicePortals
         channelName={channel.name}
         currentUserId={currentUserId}
         voicePanelRef={voicePanelRef}
+        contentEl={contentEl}
         onLeave={onLeave}
+        onScreenShareChange={onScreenShareChange}
+        onViewVoiceChannel={onViewVoiceChannel}
       />
     </LiveKitRoom>
   );
 }
 
-function VoiceRoomContent({
-  channelName,
-  currentUserId,
-  voicePanelRef,
-  onLeave,
+function VoicePortals({
+  channelName, currentUserId, voicePanelRef, contentEl, onLeave, onScreenShareChange, onViewVoiceChannel,
 }: {
   channelName: string;
   currentUserId: string;
   voicePanelRef: React.RefObject<HTMLDivElement | null>;
+  contentEl: HTMLDivElement | null;
   onLeave: () => void;
+  onScreenShareChange?: (active: boolean) => void;
+  onViewVoiceChannel?: () => void;
 }) {
+  const screenShareTracks = useTracks([Track.Source.ScreenShare]);
+  const screenShareActive = screenShareTracks.length > 0;
+
+  useEffect(() => {
+    onScreenShareChange?.(screenShareActive);
+  }, [screenShareActive, onScreenShareChange]);
+
+  const sidebar = voicePanelRef.current
+    ? createPortal(
+        <VoiceStatusPanel channelName={channelName} onLeave={onLeave} onViewVoiceChannel={onViewVoiceChannel} />,
+        voicePanelRef.current
+      )
+    : null;
+
+  const main = contentEl
+    ? createPortal(
+        <VoiceRoomGrid channelName={channelName} currentUserId={currentUserId} />,
+        contentEl
+      )
+    : null;
+
+  return <>{sidebar}{main}</>;
+}
+
+function VoiceRoomGrid({ channelName, currentUserId }: { channelName: string; currentUserId: string }) {
   const participants = useParticipants();
   const screenShareTracks = useTracks([Track.Source.ScreenShare]);
   const cameraTracks = useTracks([Track.Source.Camera]);
   const hasScreenShare = screenShareTracks.length > 0;
 
-  const sidebarPanel = voicePanelRef.current
-    ? createPortal(
-        <VoiceStatusPanel channelName={channelName} onLeave={onLeave} />,
-        voicePanelRef.current
-      )
-    : null;
-
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      <RoomAudioRenderer />
+    <div data-testid="voice-room-grid" className="flex-1 flex flex-col gap-4 p-4 overflow-y-auto min-h-0">
+      <div className="flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted">
+          <path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z" />
+        </svg>
+        <h3 className="text-text-primary font-semibold text-sm">{channelName}</h3>
+        <span className="text-text-muted text-xs">{participants.length} connected</span>
+      </div>
 
-      {/* Portal renders VoiceStatusPanel into the sidebar */}
-      {sidebarPanel}
+      {hasScreenShare && <ScreenShareView trackRef={screenShareTracks[0]} />}
 
-      {/* Participant view */}
-      <div className="flex-1 flex flex-col gap-4 p-4 overflow-y-auto min-h-0">
-        <div className="flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted">
-            <path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z" />
-          </svg>
-          <h3 className="text-text-primary font-semibold text-sm">{channelName}</h3>
-          <span className="text-text-muted text-xs">{participants.length} connected</span>
-        </div>
-
-        {hasScreenShare && (
-          <ScreenShareView trackRef={screenShareTracks[0]} />
-        )}
-
-        <div className={`flex flex-wrap gap-3 ${hasScreenShare ? "" : "flex-1 content-start"}`}>
-          {participants.map((participant) => (
-            <ParticipantTile
-              key={participant.identity}
-              participant={participant}
-              cameraTrackRef={cameraTracks.find((t) => t.participant.identity === participant.identity)}
-              isLocal={participant.identity === currentUserId}
-            />
-          ))}
-        </div>
-
+      <div className={`flex flex-wrap gap-3 ${hasScreenShare ? "" : "flex-1 content-start"}`}>
+        {participants.map((participant) => (
+          <ParticipantTile
+            key={participant.identity}
+            participant={participant}
+            cameraTrackRef={cameraTracks.find((t) => t.participant.identity === participant.identity)}
+            isLocal={participant.identity === currentUserId}
+          />
+        ))}
         {participants.length === 0 && (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center min-h-[200px]">
             <p className="text-text-muted text-sm">Connecting…</p>
           </div>
         )}
@@ -156,3 +151,4 @@ function VoiceRoomContent({
     </div>
   );
 }
+
