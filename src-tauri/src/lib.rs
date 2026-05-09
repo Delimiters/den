@@ -82,15 +82,21 @@ pub fn run() {
     let config = Arc::new(Mutex::new(AppConfig { minimize_to_tray: true }));
     let config_for_event = Arc::clone(&config);
 
-    tauri::Builder::default()
+    // In debug builds, skip single-instance enforcement so E2E test sessions can each
+    // launch their own fresh app instance without the second one immediately exiting.
+    #[cfg(debug_assertions)]
+    let builder = tauri::Builder::default().manage(config);
+    #[cfg(not(debug_assertions))]
+    let builder = tauri::Builder::default()
         .manage(config)
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-            // A second instance tried to launch — focus the existing window instead.
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.show();
                 let _ = window.set_focus();
             }
-        }))
+        }));
+
+    builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
