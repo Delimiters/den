@@ -43,9 +43,6 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
-      - name: Install tauri-driver
-        run: cargo install tauri-driver --locked
-
       - name: Add msedgedriver to PATH
         shell: pwsh
         run: |
@@ -54,9 +51,9 @@ jobs:
             -Filter "msedgedriver.exe" -Recurse -ErrorAction SilentlyContinue |
             Select-Object -First 1
           if (-not $driver) {
-            # Fallback: search PATH for msedgedriver
             $driver = Get-Command msedgedriver.exe -ErrorAction SilentlyContinue
-            if (-not $driver) { Write-Error "msedgedriver not found on this runner"; exit 1 }
+            if (-not $driver) { Write-Error "msedgedriver not found on runner"; exit 1 }
+            Write-Host "msedgedriver already in PATH"
             exit 0
           }
           "$($driver.DirectoryName)" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append

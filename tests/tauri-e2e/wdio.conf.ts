@@ -1,4 +1,3 @@
-import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 import { spawn, type ChildProcess } from "child_process";
@@ -6,9 +5,9 @@ import type { Options } from "@wdio/types";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-let tauriDriver: ChildProcess;
+let edgeDriver: ChildProcess;
 
-// Path to the debug binary — built with `npm run tauri build -- --debug --bundles none`
+// Path to the debug binary — built with `npm run tauri build -- --debug --no-bundle`
 const appBinary = path.resolve(
   process.cwd(),
   "src-tauri",
@@ -17,23 +16,18 @@ const appBinary = path.resolve(
   process.platform === "win32" ? "Den.exe" : "Den"
 );
 
-const driverBin = path.resolve(
-  os.homedir(),
-  ".cargo",
-  "bin",
-  process.platform === "win32" ? "tauri-driver.exe" : "tauri-driver"
-);
-
 export const config: Options.Testrunner = {
   hostname: "127.0.0.1",
-  port: 4444,
+  port: 9515,
   specs: [path.resolve(__dirname, "specs", "**", "*.spec.ts")],
   maxInstances: 1,
   capabilities: [
     {
       maxInstances: 1,
-      "tauri:options": {
-        application: appBinary,
+      browserName: "MicrosoftEdge",
+      "ms:edgeOptions": {
+        binary: appBinary,
+        useWebView: true,
       },
     } as WebdriverIO.Capabilities,
   ],
@@ -46,12 +40,14 @@ export const config: Options.Testrunner = {
   },
 
   onPrepare() {
-    tauriDriver = spawn(driverBin, [], {
-      stdio: [null, process.stdout, process.stderr],
-    });
+    edgeDriver = spawn(
+      process.platform === "win32" ? "msedgedriver.exe" : "msedgedriver",
+      ["--port=9515", "--silent"],
+      { stdio: [null, process.stdout, process.stderr] }
+    );
   },
 
   onComplete() {
-    tauriDriver?.kill();
+    edgeDriver?.kill();
   },
 };
