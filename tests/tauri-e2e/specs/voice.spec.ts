@@ -65,8 +65,8 @@ describe("Voice channel", () => {
   });
 
   it("can join a voice channel", async () => {
-    // Click the voice channel in the sidebar to join
-    const voiceChBtn = await $(`button=${voiceChannelName}`);
+    // Click the voice channel in the sidebar to join (partial match — button includes SVG icon)
+    const voiceChBtn = await $(`button*=${voiceChannelName}`);
     await voiceChBtn.waitForDisplayed({ timeout: 20_000 });
     await voiceChBtn.click();
 
