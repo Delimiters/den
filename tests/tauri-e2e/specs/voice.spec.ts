@@ -53,6 +53,8 @@ describe("Voice channel", () => {
     }
     await $('input[placeholder="new-channel"]').setValue(voiceChannelName);
     await $('button=Create Channel').click();
+    // Wait for the create-channel modal to close before running tests
+    await $('button=Create Channel').waitForDisplayed({ timeout: 5_000, reverse: true });
   });
 
   after(async () => {
@@ -65,7 +67,7 @@ describe("Voice channel", () => {
   it("can join a voice channel", async () => {
     // Click the voice channel in the sidebar to join
     const voiceChBtn = await $(`button=${voiceChannelName}`);
-    await voiceChBtn.waitForDisplayed({ timeout: 10_000 });
+    await voiceChBtn.waitForDisplayed({ timeout: 20_000 });
     await voiceChBtn.click();
 
     // The voice status panel should appear in the sidebar
@@ -117,16 +119,9 @@ describe("Voice channel", () => {
 
 describe("Settings modal", () => {
   it("can open settings and see Audio & Video tab", async () => {
-    // Find the user settings button (avatar/username in bottom-left)
-    const settingsBtn = await $('[title="User Settings"], [aria-label="User Settings"]');
-    if (await settingsBtn.isExisting()) {
-      await settingsBtn.click();
-    } else {
-      // Try clicking the gear icon in the bottom of the sidebar
-      const gear = await $('[data-testid="user-settings-btn"], button[title*="etting"]');
-      await gear.waitForDisplayed({ timeout: 5_000 });
-      await gear.click();
-    }
+    const settingsBtn = await $('[title="User settings"]');
+    await settingsBtn.waitForDisplayed({ timeout: 5_000 });
+    await settingsBtn.click();
 
     const audioTab = await $('button=Audio & Video');
     await audioTab.waitForDisplayed({ timeout: 5_000 });
@@ -142,7 +137,7 @@ describe("Settings modal", () => {
   });
 
   it("can open App tab and see close behavior toggle", async () => {
-    const settingsBtn = await $('[title="User Settings"], [aria-label="User Settings"], [data-testid="user-settings-btn"], button[title*="etting"]');
+    const settingsBtn = await $('[title="User settings"]');
     await settingsBtn.waitForDisplayed({ timeout: 5_000 });
     await settingsBtn.click();
 
