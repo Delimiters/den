@@ -43,21 +43,26 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
-      - name: Add msedgedriver to PATH
+      - name: Download version-matched msedgedriver
         shell: pwsh
         run: |
-          $driver = Get-ChildItem `
-            -Path "C:\Program Files (x86)\Microsoft\Edge\Application" `
-            -Filter "msedgedriver.exe" -Recurse -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-          if (-not $driver) {
-            $driver = Get-Command msedgedriver.exe -ErrorAction SilentlyContinue
-            if (-not $driver) { Write-Error "msedgedriver not found on runner"; exit 1 }
-            Write-Host "msedgedriver already in PATH"
-            exit 0
-          }
-          "$($driver.DirectoryName)" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          Write-Host "Added msedgedriver from $($driver.DirectoryName)"
+          # Find Edge browser binary to determine its version
+          $edgePaths = @(
+            "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+            "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+          )
+          $edgeBin = $edgePaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $edgeBin) { Write-Error "Edge browser not found"; exit 1 }
+          $edgeVersion = (Get-Item $edgeBin).VersionInfo.ProductVersion
+          Write-Host "Edge version: $edgeVersion"
+
+          # Download the matching msedgedriver from Microsoft CDN
+          $url = "https://msedgedriver.azureedge.net/$edgeVersion/edgedriver_win64.zip"
+          Write-Host "Downloading $url"
+          Invoke-WebRequest -Uri $url -OutFile "$env:RUNNER_TEMP\edgedriver.zip"
+          Expand-Archive -Path "$env:RUNNER_TEMP\edgedriver.zip" -DestinationPath "$env:RUNNER_TEMP\edgedriver" -Force
+          "$env:RUNNER_TEMP\edgedriver" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Write-Host "msedgedriver $edgeVersion added to PATH"
 
       - name: Run E2E tests
         run: npm run test:tauri-e2e
