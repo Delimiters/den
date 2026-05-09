@@ -6,10 +6,30 @@ const PASSWORD = process.env.E2E_PASSWORD!;
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY!;
 
+// Wait for the splashscreen to close and switch to the main window.
+// The main window starts hidden; close_splashscreen reveals it.
+async function switchToMainWindow() {
+  // Poll until the main window handle exists and the splashscreen is gone.
+  await browser.waitUntil(
+    async () => {
+      const handles = await browser.getWindowHandles();
+      return handles.length >= 1;
+    },
+    { timeout: 20_000, interval: 500 }
+  );
+  const handles = await browser.getWindowHandles();
+  // The last handle is the most-recently-opened window (the main app window).
+  await browser.switchToWindow(handles[handles.length - 1]);
+}
+
 describe("Den desktop app — smoke tests", () => {
+  before(async () => {
+    await switchToMainWindow();
+  });
+
   it("login form is visible on launch", async () => {
     // Give the app a moment to finish rendering
-    await browser.pause(1000);
+    await browser.pause(2000);
 
     const emailInput = await $('input[placeholder="you@example.com"]');
     await emailInput.waitForDisplayed({ timeout: 15_000 });

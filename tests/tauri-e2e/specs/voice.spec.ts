@@ -6,13 +6,27 @@ const PASSWORD = process.env.E2E_PASSWORD!;
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY!;
 
+// Switch to the main app window (splashscreen closes and reveals it).
+async function switchToMainWindow() {
+  await browser.waitUntil(
+    async () => {
+      const handles = await browser.getWindowHandles();
+      return handles.length >= 1;
+    },
+    { timeout: 20_000, interval: 500 }
+  );
+  const handles = await browser.getWindowHandles();
+  await browser.switchToWindow(handles[handles.length - 1]);
+}
+
 describe("Voice channel", () => {
   let guildId: string | null = null;
   let voiceChannelName: string;
 
   before(async () => {
-    // Log in
-    await browser.pause(1000);
+    // Switch to main window and log in
+    await switchToMainWindow();
+    await browser.pause(2000);
     await $('input[placeholder="you@example.com"]').waitForDisplayed({ timeout: 15_000 });
     await $('input[placeholder="you@example.com"]').setValue(EMAIL);
     await $('input[type="password"]').setValue(PASSWORD);
