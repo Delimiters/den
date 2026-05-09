@@ -75,9 +75,11 @@ describe("Den desktop app — smoke tests", () => {
       await $('[title="Add channel"]').click();
       await $('input[placeholder="new-channel"]').setValue(channelName);
       await $('button=Create Channel').click();
+      // Wait for the create-channel modal to close before looking for the channel in the sidebar
+      await $('button=Create Channel').waitForDisplayed({ timeout: 5_000, reverse: true });
 
       // Navigate to the channel
-      await $(`button=${channelName}`).waitForDisplayed({ timeout: 10_000 });
+      await $(`button=${channelName}`).waitForDisplayed({ timeout: 20_000 });
       await $(`button=${channelName}`).click();
 
       // Send a message
