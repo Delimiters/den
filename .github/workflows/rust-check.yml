@@ -1,0 +1,32 @@
+name: Rust type check (Windows)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src-tauri/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src-tauri/**"
+
+jobs:
+  check:
+    name: cargo check (x86_64-pc-windows-msvc)
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: cargo check
+        working-directory: src-tauri
+        run: cargo check --target x86_64-pc-windows-msvc
