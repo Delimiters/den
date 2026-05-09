@@ -24,7 +24,7 @@ export function ParticipantTile({ participant, cameraTrackRef, isLocal }: Partic
 
   return (
     <div className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${
-      isSpeaking ? "bg-status-online/10 ring-2 ring-status-online/60" : "bg-overlay"
+      isSpeaking ? "bg-speaking/10 ring-2 ring-speaking/60" : "bg-overlay"
     } ${hasCamera ? "w-48" : ""}`}>
       <div className={`relative ${hasCamera ? "w-full aspect-video rounded overflow-hidden bg-black" : ""}`}>
         {hasCamera ? (
