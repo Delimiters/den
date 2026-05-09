@@ -25,4 +25,7 @@ export const prefs = {
 
   getNotifyDms: () => get("notifyDms", "true") === "true",
   setNotifyDms: (v: boolean) => set("notifyDms", String(v)),
+
+  getMinimizeToTray: () => get("minimizeToTray", "true") === "true",
+  setMinimizeToTray: (v: boolean) => set("minimizeToTray", String(v)),
 };
