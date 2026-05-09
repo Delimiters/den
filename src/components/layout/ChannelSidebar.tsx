@@ -586,7 +586,7 @@ function VoiceParticipantRow({ participant, isSpeaking }: { participant: VoicePr
     <div className="flex items-center gap-2 pl-7 pr-2 py-1.5">
       <div
         data-testid={isSpeaking ? "speaking-indicator" : undefined}
-        className={`rounded-full shrink-0 transition-all duration-150 ${isSpeaking ? "ring-2 ring-status-online ring-offset-1 ring-offset-sidebar" : ""}`}
+        className={`rounded-full shrink-0 transition-all duration-150 ${isSpeaking ? "ring-2 ring-speaking ring-offset-1 ring-offset-sidebar" : ""}`}
       >
         <Avatar src={participant.avatarUrl} name={participant.displayName} size={14} />
       </div>

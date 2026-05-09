@@ -19,6 +19,9 @@
   --color-accent: #7c4dff;
   --color-accent-hover: #651fff;
 
+  /* Speaking indicator — matches the outer flame in the app icon */
+  --color-speaking: #e65100;
+
   /* Status indicators */
   --color-status-online: #23a559;
   --color-status-idle: #f0b232;
