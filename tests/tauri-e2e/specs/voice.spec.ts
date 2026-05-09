@@ -18,13 +18,15 @@ describe("Voice channel", () => {
   let voiceChannelName: string;
 
   before(async () => {
-    // Switch to main window and log in
+    // Switch to main window; log in only if not already authenticated
     await switchToMainWindow();
     await browser.pause(2000);
-    await $('input[placeholder="you@example.com"]').waitForDisplayed({ timeout: 15_000 });
-    await $('input[placeholder="you@example.com"]').setValue(EMAIL);
-    await $('input[type="password"]').setValue(PASSWORD);
-    await $('button=Log In').click();
+    const emailInput = await $('input[placeholder="you@example.com"]');
+    if (await emailInput.isDisplayed().catch(() => false)) {
+      await emailInput.setValue(EMAIL);
+      await $('input[type="password"]').setValue(PASSWORD);
+      await $('button=Log In').click();
+    }
     await $('[title="Create a server"]').waitForDisplayed({ timeout: 20_000 });
 
     // Create a test server with a voice channel
