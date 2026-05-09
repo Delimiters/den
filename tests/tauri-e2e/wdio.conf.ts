@@ -29,7 +29,10 @@ const driverBin = path.resolve(
 export const config: Options.Testrunner = {
   hostname: "127.0.0.1",
   port: 4444,
-  specs: [path.resolve(__dirname, "specs", "**", "*.spec.ts")],
+  specs: [[
+    path.resolve(__dirname, "specs", "smoke.spec.ts"),
+    path.resolve(__dirname, "specs", "voice.spec.ts"),
+  ]],
   maxInstances: 1,
   capabilities: [
     {

@@ -77,6 +77,7 @@ describe("Den desktop app — smoke tests", () => {
       await $('button=Create Channel').click();
 
       // Navigate to the channel
+      await $(`button=${channelName}`).waitForDisplayed({ timeout: 10_000 });
       await $(`button=${channelName}`).click();
 
       // Send a message
