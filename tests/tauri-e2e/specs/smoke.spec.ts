@@ -78,12 +78,13 @@ describe("Den desktop app — smoke tests", () => {
       // Wait for the create-channel modal to close before looking for the channel in the sidebar
       await $('button=Create Channel').waitForDisplayed({ timeout: 5_000, reverse: true });
 
-      // Navigate to the channel
-      await $(`button=${channelName}`).waitForDisplayed({ timeout: 20_000 });
-      await $(`button=${channelName}`).click();
+      // Navigate to the channel (button text includes the "#" icon, so use partial match)
+      await $(`button*=${channelName}`).waitForDisplayed({ timeout: 20_000 });
+      await $(`button*=${channelName}`).click();
 
       // Send a message
       const msg = `tauri-smoke-${Date.now()}`;
+      await $(`input[placeholder="Message #${channelName}"]`).waitForDisplayed({ timeout: 10_000 });
       await $(`input[placeholder="Message #${channelName}"]`).setValue(msg);
       await browser.keys("Enter");
 
