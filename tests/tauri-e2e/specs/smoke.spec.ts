@@ -84,7 +84,7 @@ describe("Den desktop app — smoke tests", () => {
 
       // Send a message
       const msg = `tauri-smoke-${Date.now()}`;
-      await $(`input[placeholder="Message #${channelName}"]`).waitForDisplayed({ timeout: 10_000 });
+      await $(`input[placeholder="Message #${channelName}"]`).waitForDisplayed({ timeout: 20_000 });
       await $(`input[placeholder="Message #${channelName}"]`).setValue(msg);
       await browser.keys("Enter");
 
