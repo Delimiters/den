@@ -15,6 +15,8 @@ import { hasPermission, Permissions } from "../../utils/permissions";
 import { GuildSidebar } from "./GuildSidebar";
 import { ChannelSidebar } from "./ChannelSidebar";
 import { DmSidebar } from "./DmSidebar";
+import { FriendsView } from "./FriendsView";
+import { useFriendships } from "../../hooks/useFriendships";
 import { MemberList } from "./MemberList";
 import { MessageList } from "../chat/MessageList";
 import { MessageInput } from "../chat/MessageInput";
@@ -51,6 +53,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
   const [replyingTo, setReplyingTo] = useState<import("../../types").Message | null>(null);
   const [userStatus, setUserStatus] = useState<import("../../types").UserStatus>("online");
+  const [dmTab, setDmTab] = useState<"messages" | "friends">("messages");
   const { toasts, addToast, dismiss } = useToasts();
 
   const {
@@ -82,6 +85,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const { startCall, acceptCall, declineCall, endCall } = useDmCallSignaling(currentUser);
 
   const { onlineUserIds } = usePresence(currentUser, userStatus);
+  const { friends, incoming, outgoing, sendRequest, acceptRequest, declineRequest, removeFriend } = useFriendships(currentUser.id);
   useUnreadTracker(currentGuildId);
   useCustomEmojis(currentGuildId);
 
@@ -109,6 +113,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const voicePanelRef = useRef<HTMLDivElement>(null);
   const [voiceContentEl, setVoiceContentEl] = useState<HTMLDivElement | null>(null);
   const [screenShareActive, setScreenShareActive] = useState(false);
+  const [speakingUserIds, setSpeakingUserIds] = useState<Set<string>>(new Set());
 
   // Voice presence — tracks who is in which voice channel via Supabase Presence.
   // Presence auto-removes entries when the WebSocket drops (force-quit, crash),
@@ -283,7 +288,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
         unreadGuildIds={unreadGuildIds}
         onGuildSelect={(id) => setCurrentGuild(id)}
         onGuildsRefresh={loadGuilds}
-        onOpenDms={() => setCurrentDm(dmChannels[0]?.id ?? null)}
+        onOpenDms={() => { setCurrentDm(null); setDmTab("messages"); }}
       />
 
       {/* Left sidebar — guild channels or DM list */}
@@ -298,6 +303,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           canManageChannels={hasPermission(myPermissions, Permissions.MANAGE_CHANNELS)}
           voicePanelRef={voicePanelRef}
           voicePresence={voicePresence}
+          speakingUserIds={speakingUserIds}
           onChannelSelect={(id) => {
             const ch = channels.find((c) => c.id === id);
             if (ch?.type === "voice") {
@@ -324,8 +330,15 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           currentUser={currentUser}
           userStatus={userStatus}
           unread={unread}
-          onDmSelect={(id) => setCurrentDm(id)}
-          onOpenDm={handleOpenDm}
+          friends={friends}
+          onlineUserIds={onlineUserIds}
+          activeTab={dmTab}
+          onTabChange={(tab) => {
+            setDmTab(tab);
+            if (tab === "friends") setCurrentDm(null);
+          }}
+          onDmSelect={(id) => { setCurrentDm(id); setDmTab("messages"); }}
+          onOpenDm={(userId) => { handleOpenDm(userId); setDmTab("messages"); }}
           onStatusChange={setUserStatus}
           onSignOut={onSignOut}
         />
@@ -344,8 +357,9 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               currentUserId={currentUser.id}
               voicePanelRef={voicePanelRef}
               contentEl={voiceContentEl}
-              onLeave={leaveVoice}
+              onLeave={() => { leaveVoice(); setSpeakingUserIds(new Set()); }}
               onScreenShareChange={setScreenShareActive}
+              onSpeakingChange={setSpeakingUserIds}
               onViewVoiceChannel={() => setCurrentChannel(voiceChannelId)}
             />
           </Suspense>
@@ -470,12 +484,24 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               onCancelReply={() => setReplyingTo(null)}
             />
           </>
+        ) : viewMode === "dm" ? (
+          <FriendsView
+            currentUserId={currentUser.id}
+            friends={friends}
+            incoming={incoming}
+            outgoing={outgoing}
+            onlineUserIds={onlineUserIds}
+            onOpenDm={(userId) => { handleOpenDm(userId); setDmTab("messages"); }}
+            onAccept={acceptRequest}
+            onDecline={declineRequest}
+            onRemove={removeFriend}
+            onSendRequest={sendRequest}
+            initialTab={dmTab === "friends" ? "all" : "online"}
+          />
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-text-muted text-lg">
-              {viewMode === "dm"
-                ? "Select a conversation or click a member to start one"
-                : currentGuild
+              {currentGuild
                 ? "Select a channel to start chatting"
                 : "Select or create a server"}
             </p>

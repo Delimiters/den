@@ -22,6 +22,7 @@ interface ChannelSidebarProps {
   canManageChannels?: boolean;
   voicePanelRef?: React.RefObject<HTMLDivElement | null>;
   voicePresence?: VoicePresenceEntry[];
+  speakingUserIds?: Set<string>;
   onChannelSelect: (channelId: string) => void;
   onChannelsRefresh: () => void;
   onStatusChange: (s: UserStatus) => void;
@@ -39,6 +40,7 @@ export function ChannelSidebar({
   canManageChannels = false,
   voicePanelRef,
   voicePresence = [],
+  speakingUserIds = new Set(),
   onChannelSelect,
   onChannelsRefresh,
   onStatusChange,
@@ -120,10 +122,7 @@ export function ChannelSidebar({
                             onClick={() => onChannelSelect(ch.id)}
                           />
                           {ch.type === "voice" && participants.map((p) => (
-                            <div key={p.userId} className="flex items-center gap-2 pl-7 pr-2 py-2">
-                              <Avatar src={p.avatarUrl} name={p.displayName} size={14} />
-                              <span className="text-text-muted text-sm truncate">{p.displayName}</span>
-                            </div>
+                            <VoiceParticipantRow key={p.userId} participant={p} isSpeaking={speakingUserIds.has(p.userId)} />
                           ))}
                         </div>
                       );
@@ -162,10 +161,7 @@ export function ChannelSidebar({
                             onClick={() => onChannelSelect(ch.id)}
                           />
                           {participants.map((p) => (
-                            <div key={p.userId} className="flex items-center gap-2 pl-7 pr-2 py-2">
-                              <Avatar src={p.avatarUrl} name={p.displayName} size={14} />
-                              <span className="text-text-muted text-sm truncate">{p.displayName}</span>
-                            </div>
+                            <VoiceParticipantRow key={p.userId} participant={p} isSpeaking={speakingUserIds.has(p.userId)} />
                           ))}
                         </div>
                       );
@@ -581,6 +577,22 @@ function AddChannelModal({ guildId, initialType = "text", onClose, onCreated }: 
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function VoiceParticipantRow({ participant, isSpeaking }: { participant: VoicePresenceEntry; isSpeaking: boolean }) {
+  return (
+    <div className="flex items-center gap-2 pl-7 pr-2 py-1.5">
+      <div
+        data-testid={isSpeaking ? "speaking-indicator" : undefined}
+        className={`rounded-full shrink-0 transition-all duration-150 ${isSpeaking ? "ring-2 ring-status-online ring-offset-1 ring-offset-sidebar" : ""}`}
+      >
+        <Avatar src={participant.avatarUrl} name={participant.displayName} size={14} />
+      </div>
+      <span className={`text-sm truncate transition-colors ${isSpeaking ? "text-text-primary" : "text-text-muted"}`}>
+        {participant.displayName}
+      </span>
     </div>
   );
 }

@@ -2,7 +2,9 @@ import { useState, useRef } from "react";
 import { supabase } from "../../lib/supabase";
 import { Avatar } from "../ui/Avatar";
 import { StatusIndicator } from "../ui/StatusIndicator";
-import type { DmChannel, User, UserStatus } from "../../types";
+import type { DmChannel, Friendship, User, UserStatus } from "../../types";
+
+type DmTab = "messages" | "friends";
 
 interface DmSidebarProps {
   dmChannels: DmChannel[];
@@ -10,31 +12,65 @@ interface DmSidebarProps {
   currentUser: User;
   userStatus: UserStatus;
   unread: Record<string, true>;
+  friends: Friendship[];
+  onlineUserIds: Set<string>;
+  activeTab: DmTab;
+  onTabChange: (tab: DmTab) => void;
   onDmSelect: (dmId: string) => void;
   onOpenDm: (userId: string) => void;
   onStatusChange: (s: UserStatus) => void;
   onSignOut: () => void;
 }
 
-export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, unread, onDmSelect, onOpenDm, onStatusChange, onSignOut }: DmSidebarProps) {
+export function DmSidebar({
+  dmChannels,
+  currentDmId,
+  currentUser,
+  userStatus,
+  unread,
+  friends,
+  onlineUserIds,
+  activeTab,
+  onTabChange,
+  onDmSelect,
+  onOpenDm,
+  onStatusChange,
+  onSignOut,
+}: DmSidebarProps) {
   const [showNewDm, setShowNewDm] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const statusMenuRef = useRef<HTMLDivElement>(null);
+
+  const onlineFriends = friends.filter(
+    (f) =>
+      f.friend &&
+      (onlineUserIds.has(f.friend.id) ||
+        ["online", "idle", "dnd"].includes(f.friend.status ?? ""))
+  );
+  const offlineFriends = friends.filter(
+    (f) =>
+      !f.friend ||
+      (!onlineUserIds.has(f.friend.id) && f.friend.status === "offline")
+  );
+
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
-      {/* Header */}
-      <div className="h-12 px-4 flex items-center justify-between border-b border-divider shadow-sm shrink-0">
-        <h2 className="text-text-primary font-bold text-base">Direct Messages</h2>
-        <button
-          onClick={() => setShowNewDm(true)}
-          title="New message"
-          className="text-text-muted hover:text-text-primary transition-colors"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 3H5a2 2 0 00-2 2v14l4-4h12a2 2 0 002-2V5a2 2 0 00-2-2zm-7 12H8v-2h4v2zm4-4H8v-2h8v2zm0-4H8V5h8v2z"/>
-            <path d="M20 2v4h4" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-        </button>
+      {/* Tab switcher */}
+      <div className="h-12 px-3 flex items-center gap-1 border-b border-divider shadow-sm shrink-0">
+        <TabBtn label="Messages" active={activeTab === "messages"} onClick={() => onTabChange("messages")} />
+        <TabBtn label="Friends" active={activeTab === "friends"} onClick={() => onTabChange("friends")} />
+        {activeTab === "messages" && (
+          <button
+            onClick={() => setShowNewDm(true)}
+            title="New message"
+            className="ml-auto text-text-muted hover:text-text-primary transition-colors"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+              <path d="M13 11h-2V9h2v2zm0 4h-2v-2h2v2z" fill="white" opacity="0.6" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {showNewDm && (
@@ -45,48 +81,98 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
         />
       )}
 
-      {/* DM list */}
-      <div className="flex-1 overflow-y-auto px-2 py-3">
-        {dmChannels.length === 0 ? (
-          <p className="text-text-muted text-xs px-3 py-2">No conversations yet.<br />Click a member to start one.</p>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        {activeTab === "messages" ? (
+          <div className="px-2 py-3">
+            {dmChannels.length === 0 ? (
+              <p className="text-text-muted text-xs px-3 py-2">
+                No conversations yet.
+                <br />
+                Click a member or friend to start one.
+              </p>
+            ) : (
+              dmChannels.map((dm) => {
+                const other = dm.participants[0];
+                if (!other) return null;
+                const name = other.display_name || other.username;
+                const hasUnread = !!unread[dm.id];
+                return (
+                  <button
+                    key={dm.id}
+                    onClick={() => onDmSelect(dm.id)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors ${
+                      dm.id === currentDmId
+                        ? "bg-white/[0.12] text-text-primary"
+                        : "text-text-muted hover:bg-white/[0.06] hover:text-text-secondary"
+                    }`}
+                  >
+                    <div className="relative shrink-0">
+                      <Avatar src={other.avatar_url} name={name} size={32} />
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-sidebar rounded-full flex items-center justify-center">
+                        <StatusIndicator status={other.status ?? "offline"} size={10} />
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className={`text-sm truncate ${hasUnread ? "text-text-primary font-semibold" : ""}`}>
+                          {name}
+                        </span>
+                        {hasUnread && <span className="w-2 h-2 bg-white rounded-full shrink-0" />}
+                      </div>
+                      {dm.lastMessage && (
+                        <p className="text-sm truncate text-text-muted mt-0.5">
+                          {dm.lastMessage.content || "📎 Attachment"}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
         ) : (
-          dmChannels.map((dm) => {
-            const other = dm.participants[0];
-            if (!other) return null;
-            const name = other.display_name || other.username;
-            const hasUnread = !!unread[dm.id];
-            return (
-              <button
-                key={dm.id}
-                onClick={() => onDmSelect(dm.id)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors ${
-                  dm.id === currentDmId
-                    ? "bg-white/[0.12] text-text-primary"
-                    : "text-text-muted hover:bg-white/[0.06] hover:text-text-secondary"
-                }`}
-              >
-                <div className="relative shrink-0">
-                  <Avatar src={other.avatar_url} name={name} size={32} />
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-sidebar rounded-full flex items-center justify-center">
-                    <StatusIndicator status={other.status ?? "offline"} size={10} />
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className={`text-sm truncate ${hasUnread ? "text-text-primary font-semibold" : ""}`}>{name}</span>
-                    {hasUnread && (
-                      <span className="w-2 h-2 bg-white rounded-full shrink-0" />
-                    )}
-                  </div>
-                  {dm.lastMessage && (
-                    <p className="text-sm truncate text-text-muted mt-0.5">
-                      {dm.lastMessage.content || "📎 Attachment"}
+          /* Friends tab — compact list */
+          <div className="py-3">
+            {friends.length === 0 ? (
+              <p className="text-text-muted text-xs px-5 py-2">
+                No friends yet. Add some friends!
+              </p>
+            ) : (
+              <>
+                {onlineFriends.length > 0 && (
+                  <>
+                    <p className="text-text-muted text-xs font-semibold uppercase tracking-wider px-5 pb-1">
+                      Online — {onlineFriends.length}
                     </p>
-                  )}
-                </div>
-              </button>
-            );
-          })
+                    {onlineFriends.map((f) => (
+                      <FriendEntry
+                        key={f.id}
+                        friendship={f}
+                        isOnline={true}
+                        onClick={() => f.friend && onOpenDm(f.friend.id)}
+                      />
+                    ))}
+                  </>
+                )}
+                {offlineFriends.length > 0 && (
+                  <>
+                    <p className="text-text-muted text-xs font-semibold uppercase tracking-wider px-5 pt-3 pb-1">
+                      Offline — {offlineFriends.length}
+                    </p>
+                    {offlineFriends.map((f) => (
+                      <FriendEntry
+                        key={f.id}
+                        friendship={f}
+                        isOnline={false}
+                        onClick={() => f.friend && onOpenDm(f.friend.id)}
+                      />
+                    ))}
+                  </>
+                )}
+              </>
+            )}
+          </div>
         )}
       </div>
 
@@ -132,6 +218,58 @@ export function DmSidebar({ dmChannels, currentDmId, currentUser, userStatus, un
         </div>
       </div>
     </div>
+  );
+}
+
+function TabBtn({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+        active
+          ? "bg-white/[0.12] text-text-primary"
+          : "text-text-muted hover:bg-white/[0.06] hover:text-text-secondary"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function FriendEntry({
+  friendship,
+  isOnline,
+  onClick,
+}: {
+  friendship: Friendship;
+  isOnline: boolean;
+  onClick: () => void;
+}) {
+  const user = friendship.friend;
+  if (!user) return null;
+  const name = user.display_name || user.username;
+  const status = isOnline
+    ? (user.status === "idle" || user.status === "dnd" ? user.status : "online")
+    : "offline";
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-2 px-3 py-1.5 mx-2 rounded hover:bg-white/[0.06] transition-colors group"
+      style={{ width: "calc(100% - 16px)" }}
+    >
+      <div className="relative shrink-0">
+        <Avatar src={user.avatar_url} name={name} size={32} />
+        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-sidebar rounded-full flex items-center justify-center">
+          <StatusIndicator status={status} size={10} />
+        </span>
+      </div>
+      <div className="flex-1 min-w-0 text-left">
+        <p className={`text-sm truncate ${isOnline ? "text-text-secondary" : "text-text-muted"} group-hover:text-text-primary transition-colors`}>
+          {name}
+        </p>
+      </div>
+    </button>
   );
 }
 

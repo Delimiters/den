@@ -4,6 +4,7 @@ import {
   LiveKitRoom,
   RoomAudioRenderer,
   useParticipants,
+  useSpeakingParticipants,
   useTracks,
 } from "@livekit/components-react";
 import { ExternalE2EEKeyProvider, RemoteTrackPublication, Track } from "livekit-client";
@@ -26,6 +27,8 @@ interface VoiceChannelViewProps {
   onScreenShareChange?: (active: boolean) => void;
   /** Called when a participant's LIVE badge is clicked — navigates to the voice channel view. */
   onViewVoiceChannel?: () => void;
+  /** Fires whenever the set of speaking participant identities changes. */
+  onSpeakingChange?: (ids: Set<string>) => void;
 }
 
 function useE2EEOptions(e2eeKey: string | null) {
@@ -51,7 +54,7 @@ function useE2EEOptions(e2eeKey: string | null) {
  */
 export function VoiceConnection({
   token, livekitUrl, e2eeKey, channel, currentUserId,
-  voicePanelRef, contentEl, onLeave, onScreenShareChange, onViewVoiceChannel,
+  voicePanelRef, contentEl, onLeave, onScreenShareChange, onViewVoiceChannel, onSpeakingChange,
 }: VoiceChannelViewProps) {
   const onLeaveRef = useRef(onLeave);
   onLeaveRef.current = onLeave;
@@ -76,13 +79,14 @@ export function VoiceConnection({
         onLeave={onLeave}
         onScreenShareChange={onScreenShareChange}
         onViewVoiceChannel={onViewVoiceChannel}
+        onSpeakingChange={onSpeakingChange}
       />
     </LiveKitRoom>
   );
 }
 
 function VoicePortals({
-  channelName, currentUserId, voicePanelRef, contentEl, onLeave, onScreenShareChange, onViewVoiceChannel,
+  channelName, currentUserId, voicePanelRef, contentEl, onLeave, onScreenShareChange, onViewVoiceChannel, onSpeakingChange,
 }: {
   channelName: string;
   currentUserId: string;
@@ -91,10 +95,16 @@ function VoicePortals({
   onLeave: () => void;
   onScreenShareChange?: (active: boolean) => void;
   onViewVoiceChannel?: () => void;
+  onSpeakingChange?: (ids: Set<string>) => void;
 }) {
   // Tracks the user has explicitly opted into watching — prevents the auto-unsubscribe
   // effect from re-firing and cancelling their opt-in on the next render.
   const optedInSids = useRef(new Set<string>());
+
+  const speakingParticipants = useSpeakingParticipants();
+  useEffect(() => {
+    onSpeakingChange?.(new Set(speakingParticipants.map((p) => p.identity)));
+  }, [speakingParticipants]);
 
   // Subscribed-only: drives the auto-takeover and ScreenShareView rendering
   const screenShareTracks = useTracks([Track.Source.ScreenShare]);

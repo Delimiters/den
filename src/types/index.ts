@@ -118,6 +118,17 @@ export interface CustomEmoji {
   created_at: string;
 }
 
+export type FriendshipStatus = "pending" | "accepted" | "blocked";
+
+export interface Friendship {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: FriendshipStatus;
+  created_at: string;
+  friend?: User;
+}
+
 export interface DmMessage {
   id: string;
   dm_channel_id: string;
