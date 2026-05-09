@@ -31,13 +31,19 @@ jobs:
           new_version="$major.$minor.$((patch + 1))"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v$new_version"
-          git push origin "v$new_version"
-          echo "version=$new_version" >> "$GITHUB_OUTPUT"
-          echo "Tagged v$new_version"
+          git tag "v$new_version" 2>/dev/null || true
+          if git push origin "v$new_version" 2>/dev/null; then
+            echo "version=$new_version" >> "$GITHUB_OUTPUT"
+            echo "Tagged v$new_version"
+          else
+            # Tag already exists — another concurrent release run got there first. Skip.
+            echo "version=" >> "$GITHUB_OUTPUT"
+            echo "Tag v$new_version already exists, skipping duplicate release"
+          fi
 
   build:
     needs: prepare
+    if: needs.prepare.outputs.version != ''
     permissions:
       contents: write
     strategy:
@@ -134,6 +140,7 @@ jobs:
 
   publish:
     needs: [prepare, build]
+    if: needs.prepare.outputs.version != ''
     permissions:
       contents: write
     runs-on: ubuntu-latest
