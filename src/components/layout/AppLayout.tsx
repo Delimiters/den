@@ -112,7 +112,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
 
   const voicePanelRef = useRef<HTMLDivElement>(null);
   const [voiceContentEl, setVoiceContentEl] = useState<HTMLDivElement | null>(null);
-  const [screenShareActive, setScreenShareActive] = useState(false);
+  const [, setScreenShareActive] = useState(false);
   const [speakingUserIds, setSpeakingUserIds] = useState<Set<string>>(new Set());
 
   // Voice presence — tracks who is in which voice channel via Supabase Presence.
@@ -260,8 +260,8 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const isGuildMode = viewMode === "guild";
   const currentChannel = channels.find((c) => c.id === currentChannelId);
   const voiceChannel = channels.find((c) => c.id === voiceChannelId);
-  // Show voice grid when viewing the connected voice channel OR when screen share is active
-  const showVoiceGrid = !!(isGuildMode && voiceChannelId && (currentChannelId === voiceChannelId || screenShareActive));
+  // Show voice grid only when actively viewing the voice channel
+  const showVoiceGrid = !!(isGuildMode && voiceChannelId && currentChannelId === voiceChannelId);
   const currentDm = dmChannels.find((d) => d.id === currentDmId);
   const dmPartner = currentDm?.participants[0];
   const sendFn = isGuildMode

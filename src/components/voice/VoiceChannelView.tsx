@@ -3,9 +3,11 @@ import { createPortal } from "react-dom";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
+  VideoTrack,
   useParticipants,
   useSpeakingParticipants,
   useTracks,
+  type TrackReference,
 } from "@livekit/components-react";
 import { ExternalE2EEKeyProvider, RemoteTrackPublication, Track } from "livekit-client";
 import { ParticipantTile, ScreenShareView } from "./ParticipantTile";
@@ -186,7 +188,19 @@ function VoicePortals({
       )
     : null;
 
-  return <>{sidebar}{main}</>;
+  // When the user navigates away from the voice channel while screen sharing,
+  // show a mini floating preview instead of locking them to the voice grid.
+  const mini = !contentEl && screenShareTracks.length > 0
+    ? createPortal(
+        <ScreenShareMiniPanel
+          trackRef={screenShareTracks[0]}
+          onExpand={() => onViewVoiceChannel?.()}
+        />,
+        document.body
+      )
+    : null;
+
+  return <>{sidebar}{main}{mini}</>;
 }
 
 function VoiceRoomGrid({ channelName, currentUserId, onWatchScreenShare }: {
@@ -246,6 +260,40 @@ function VoiceRoomGrid({ channelName, currentUserId, onWatchScreenShare }: {
             <p className="text-text-muted text-sm">Connecting…</p>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ScreenShareMiniPanel({ trackRef, onExpand }: { trackRef: TrackReference; onExpand: () => void }) {
+  return (
+    <div className="fixed bottom-5 right-5 z-50 w-72 rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-black group">
+      <div className="relative aspect-video">
+        <VideoTrack trackRef={trackRef} className="w-full h-full object-contain" />
+        {/* Expand overlay on hover */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50">
+          <button
+            onClick={onExpand}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-full transition-colors border border-white/20"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+            </svg>
+            Return to stream
+          </button>
+        </div>
+      </div>
+      <div className="px-3 py-2 flex items-center justify-between bg-overlay">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-danger animate-pulse" />
+          <span className="text-text-muted text-xs">Screen sharing</span>
+        </div>
+        <button
+          onClick={onExpand}
+          className="text-text-muted hover:text-text-primary text-xs transition-colors"
+        >
+          View
+        </button>
       </div>
     </div>
   );
