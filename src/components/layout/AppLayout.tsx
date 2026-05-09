@@ -113,6 +113,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
   const voicePanelRef = useRef<HTMLDivElement>(null);
   const [voiceContentEl, setVoiceContentEl] = useState<HTMLDivElement | null>(null);
   const [screenShareActive, setScreenShareActive] = useState(false);
+  const [speakingUserIds, setSpeakingUserIds] = useState<Set<string>>(new Set());
 
   // Voice presence — tracks who is in which voice channel via Supabase Presence.
   // Presence auto-removes entries when the WebSocket drops (force-quit, crash),
@@ -302,6 +303,7 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
           canManageChannels={hasPermission(myPermissions, Permissions.MANAGE_CHANNELS)}
           voicePanelRef={voicePanelRef}
           voicePresence={voicePresence}
+          speakingUserIds={speakingUserIds}
           onChannelSelect={(id) => {
             const ch = channels.find((c) => c.id === id);
             if (ch?.type === "voice") {
@@ -355,8 +357,9 @@ export function AppLayout({ currentUser, onSignOut }: AppLayoutProps) {
               currentUserId={currentUser.id}
               voicePanelRef={voicePanelRef}
               contentEl={voiceContentEl}
-              onLeave={leaveVoice}
+              onLeave={() => { leaveVoice(); setSpeakingUserIds(new Set()); }}
               onScreenShareChange={setScreenShareActive}
+              onSpeakingChange={setSpeakingUserIds}
               onViewVoiceChannel={() => setCurrentChannel(voiceChannelId)}
             />
           </Suspense>
