@@ -10,12 +10,15 @@ let edgeDriver: ChildProcess;
 let denProcess: ChildProcess;
 
 // Path to the debug binary — built with `npm run tauri build -- --debug --no-bundle`
+// On Windows CI we build with --target x86_64-pc-windows-msvc, so the binary lands
+// in the target-triple subdirectory instead of target/debug/.
 const appBinary = path.resolve(
   process.cwd(),
   "src-tauri",
   "target",
-  "debug",
-  process.platform === "win32" ? "Den.exe" : "Den"
+  ...(process.platform === "win32"
+    ? ["x86_64-pc-windows-msvc", "debug", "Den.exe"]
+    : ["debug", "Den"])
 );
 
 const APP_DEBUG_PORT = 9222;
