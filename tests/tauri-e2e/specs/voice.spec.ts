@@ -6,15 +6,9 @@ const PASSWORD = process.env.E2E_PASSWORD!;
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY!;
 
-// Switch to the main app window (splashscreen closes and reveals it).
+// Switch to the main app window immediately.
+// Window handle order: [splashscreen=0, main=1].
 async function switchToMainWindow() {
-  await browser.waitUntil(
-    async () => {
-      const handles = await browser.getWindowHandles();
-      return handles.length >= 1;
-    },
-    { timeout: 20_000, interval: 500 }
-  );
   const handles = await browser.getWindowHandles();
   await browser.switchToWindow(handles[handles.length - 1]);
 }

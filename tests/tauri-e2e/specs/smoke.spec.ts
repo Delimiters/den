@@ -6,19 +6,12 @@ const PASSWORD = process.env.E2E_PASSWORD!;
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY!;
 
-// Wait for the splashscreen to close and switch to the main window.
-// The main window starts hidden; close_splashscreen reveals it.
+// Switch to the main app window immediately.
+// tauri-driver attaches to the splashscreen first (it opens first); we must
+// switch to the main window handle before the splashscreen closes or our
+// session becomes invalid. Window order: [splashscreen=0, main=1].
 async function switchToMainWindow() {
-  // Poll until the main window handle exists and the splashscreen is gone.
-  await browser.waitUntil(
-    async () => {
-      const handles = await browser.getWindowHandles();
-      return handles.length >= 1;
-    },
-    { timeout: 20_000, interval: 500 }
-  );
   const handles = await browser.getWindowHandles();
-  // The last handle is the most-recently-opened window (the main app window).
   await browser.switchToWindow(handles[handles.length - 1]);
 }
 
