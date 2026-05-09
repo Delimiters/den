@@ -131,7 +131,7 @@ pub fn run() {
                             Ok(())
                         }));
                         let mut token: i64 = 0;
-                        let _ = webview.add_PermissionRequested(handler, &mut token);
+                        let _ = webview.add_PermissionRequested(&handler, &mut token);
                     }
                 });
             }
