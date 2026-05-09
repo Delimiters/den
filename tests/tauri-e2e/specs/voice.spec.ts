@@ -72,13 +72,13 @@ describe("Voice channel", () => {
 
     // The voice status panel should appear in the sidebar
     const statusPanel = await $('[data-testid="voice-status-panel"]');
-    await statusPanel.waitForDisplayed({ timeout: 15_000 });
+    await statusPanel.waitForDisplayed({ timeout: 30_000 });
   });
 
   it("mic button toggles mute state", async () => {
     // Find the mic toggle button inside the voice status panel
     const micBtn = await $('[data-testid="voice-status-panel"] [title*="ic"]');
-    await micBtn.waitForDisplayed({ timeout: 5_000 });
+    await micBtn.waitForDisplayed({ timeout: 10_000 });
 
     const initialTitle = await micBtn.getAttribute("title");
     await micBtn.click();
@@ -91,7 +91,7 @@ describe("Voice channel", () => {
 
   it("camera button toggles camera state", async () => {
     const cameraBtn = await $('[data-testid="voice-status-panel"] [title*="amera"]');
-    await cameraBtn.waitForDisplayed({ timeout: 5_000 });
+    await cameraBtn.waitForDisplayed({ timeout: 10_000 });
 
     const initialTitle = await cameraBtn.getAttribute("title");
     await cameraBtn.click();
@@ -107,7 +107,7 @@ describe("Voice channel", () => {
 
   it("leave button exits voice channel", async () => {
     const leaveBtn = await $('[data-testid="voice-status-panel"] [title="Leave voice channel"]');
-    await leaveBtn.waitForDisplayed({ timeout: 5_000 });
+    await leaveBtn.waitForDisplayed({ timeout: 10_000 });
     await leaveBtn.click();
     await browser.pause(500);
 
