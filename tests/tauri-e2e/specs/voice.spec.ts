@@ -6,11 +6,11 @@ const PASSWORD = process.env.E2E_PASSWORD!;
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY!;
 
-// Switch to the main app window immediately.
-// Window handle order: [splashscreen=0, main=1].
+// In debug builds the splashscreen is closed from Rust setup immediately,
+// so the only window handle is the main app window.
 async function switchToMainWindow() {
   const handles = await browser.getWindowHandles();
-  await browser.switchToWindow(handles[handles.length - 1]);
+  await browser.switchToWindow(handles[0]);
 }
 
 describe("Voice channel", () => {

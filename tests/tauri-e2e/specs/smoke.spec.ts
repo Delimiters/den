@@ -6,13 +6,12 @@ const PASSWORD = process.env.E2E_PASSWORD!;
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY!;
 
-// Switch to the main app window immediately.
-// tauri-driver attaches to the splashscreen first (it opens first); we must
-// switch to the main window handle before the splashscreen closes or our
-// session becomes invalid. Window order: [splashscreen=0, main=1].
+// In debug builds the splashscreen is closed immediately from Rust setup,
+// so tauri-driver connects directly to the main window. No switching needed,
+// but we keep this helper in case the handle order ever varies.
 async function switchToMainWindow() {
   const handles = await browser.getWindowHandles();
-  await browser.switchToWindow(handles[handles.length - 1]);
+  await browser.switchToWindow(handles[0]);
 }
 
 describe("Den desktop app — smoke tests", () => {

@@ -150,6 +150,16 @@ pub fn run() {
                 let _ = SetCurrentProcessExplicitAppUserModelID(w!("com.jake.den"));
             }
 
+            // In debug builds, skip the splashscreen and show the main window
+            // immediately so E2E tests connect to the main window right away.
+            #[cfg(debug_assertions)]
+            {
+                if let Some(splash) = app.get_webview_window("splashscreen") {
+                    let _ = splash.close();
+                }
+                let _ = window.show();
+            }
+
             // Minimize to tray or quit depending on user preference.
             let window_clone = window.clone();
             window.on_window_event(move |event| {
