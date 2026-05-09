@@ -24,7 +24,7 @@ const driverBin = path.resolve(
 export const config: Options.Testrunner = {
   hostname: "127.0.0.1",
   port: 4444,
-  specs: ["./tests/tauri-e2e/specs/**/*.spec.ts"],
+  specs: [path.resolve(__dirname, "specs", "**", "*.spec.ts")],
   maxInstances: 1,
   capabilities: [
     {
