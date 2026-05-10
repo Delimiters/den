@@ -97,7 +97,8 @@ test.describe("server settings", () => {
       await page.getByPlaceholder("Role name").fill("Testers");
       await page.getByRole("button", { name: /save/i }).click();
 
-      await expect(page.getByText("Testers")).toBeVisible({ timeout: 8_000 });
+      // Check the role appears in the role list (getByText would match the input too — use button role)
+      await expect(page.getByRole("button", { name: "Testers" })).toBeVisible({ timeout: 8_000 });
     } finally {
       await cleanup();
     }
