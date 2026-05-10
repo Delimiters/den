@@ -31,6 +31,56 @@ test.describe("navigation", () => {
     await expect(page.getByPlaceholder("Jump to channel or conversation…")).not.toBeVisible();
   });
 
+  test("DM sidebar shows Messages and Friends tabs", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
+
+    await page.getByTitle("Direct Messages").scrollIntoViewIfNeeded();
+    await page.getByTitle("Direct Messages").click();
+
+    // Scope to the DM tab bar to avoid matching other "Messages" buttons on the page
+    const tabBar = page.locator("[data-testid='dm-tab-bar']");
+    await expect(tabBar).toBeVisible({ timeout: 5_000 });
+    await expect(tabBar.getByRole("button", { name: "Messages" })).toBeVisible();
+    await expect(tabBar.getByRole("button", { name: "Friends" })).toBeVisible();
+  });
+
+  test("Friends tab shows friends view with sub-tabs", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
+
+    await page.getByTitle("Direct Messages").scrollIntoViewIfNeeded();
+    await page.getByTitle("Direct Messages").click();
+    const tabBar = page.locator("[data-testid='dm-tab-bar']");
+    await expect(tabBar).toBeVisible({ timeout: 5_000 });
+    await tabBar.getByRole("button", { name: "Friends" }).click();
+
+    // FriendsView sub-tabs (Online/All/Pending may include a count in their accessible name)
+    await expect(page.getByRole("button", { name: /^Online/ })).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole("button", { name: /^All/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Pending/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Add Friend" })).toBeVisible();
+  });
+
+  test("Add Friend tab accepts username input and searches", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
+
+    await page.getByTitle("Direct Messages").scrollIntoViewIfNeeded();
+    await page.getByTitle("Direct Messages").click();
+    const tabBar = page.locator("[data-testid='dm-tab-bar']");
+    await expect(tabBar).toBeVisible({ timeout: 5_000 });
+    await tabBar.getByRole("button", { name: "Friends" }).click();
+    await page.getByRole("button", { name: "Add Friend" }).click();
+
+    const usernameInput = page.getByPlaceholder("Search by username…");
+    await expect(usernameInput).toBeVisible({ timeout: 5_000 });
+
+    await usernameInput.fill("zzz-nonexistent-xyz");
+    await expect(page.getByText(/No users found/)).toBeVisible({ timeout: 8_000 });
+  });
+
+  // Runs last — creates and deletes a guild, which may leave Supabase realtime in a changed state
   test("quick switcher finds a channel", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
@@ -69,51 +119,5 @@ test.describe("navigation", () => {
         await sb.from("guilds").delete().eq("id", guildId);
       }
     }
-  });
-
-  test("DM sidebar shows Messages and Friends tabs", async ({ page }) => {
-    await page.goto("/");
-    await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
-
-    await page.getByTitle("Direct Messages").click();
-
-    // Scope to the DM tab bar to avoid matching other "Messages" buttons on the page
-    const tabBar = page.locator("[data-testid='dm-tab-bar']");
-    await expect(tabBar).toBeVisible({ timeout: 5_000 });
-    await expect(tabBar.getByRole("button", { name: "Messages" })).toBeVisible();
-    await expect(tabBar.getByRole("button", { name: "Friends" })).toBeVisible();
-  });
-
-  test("Friends tab shows friends view with sub-tabs", async ({ page }) => {
-    await page.goto("/");
-    await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
-
-    await page.getByTitle("Direct Messages").click();
-    const tabBar = page.locator("[data-testid='dm-tab-bar']");
-    await expect(tabBar).toBeVisible({ timeout: 5_000 });
-    await tabBar.getByRole("button", { name: "Friends" }).click();
-
-    // FriendsView sub-tabs (Online/All/Pending may include a count in their accessible name)
-    await expect(page.getByRole("button", { name: /^Online/ })).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByRole("button", { name: /^All/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Pending/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Add Friend" })).toBeVisible();
-  });
-
-  test("Add Friend tab accepts username input and searches", async ({ page }) => {
-    await page.goto("/");
-    await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
-
-    await page.getByTitle("Direct Messages").click();
-    const tabBar = page.locator("[data-testid='dm-tab-bar']");
-    await expect(tabBar).toBeVisible({ timeout: 5_000 });
-    await tabBar.getByRole("button", { name: "Friends" }).click();
-    await page.getByRole("button", { name: "Add Friend" }).click();
-
-    const usernameInput = page.getByPlaceholder("Search by username…");
-    await expect(usernameInput).toBeVisible({ timeout: 5_000 });
-
-    await usernameInput.fill("zzz-nonexistent-xyz");
-    await expect(page.getByText(/No users found/)).toBeVisible({ timeout: 8_000 });
   });
 });
