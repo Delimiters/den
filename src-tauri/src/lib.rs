@@ -152,6 +152,7 @@ pub fn run() {
                     Microsoft::Web::WebView2::Win32::ICoreWebView2_27,
                     ScreenCaptureStartingEventHandler,
                 };
+                use windows::core::Interface;
                 let _ = window.with_webview(|wv| unsafe {
                     let controller = wv.controller();
                     if let Ok(webview) = controller.CoreWebView2() {
