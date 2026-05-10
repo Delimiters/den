@@ -6,7 +6,7 @@
 let permissionRequested = false;
 
 export async function requestNotificationPermission(): Promise<void> {
-  if (!("Notification" in window)) return;
+  if (typeof Notification === "undefined" || !Notification) return;
   if (Notification.permission === "default" && !permissionRequested) {
     permissionRequested = true;
     await Notification.requestPermission();
@@ -14,7 +14,7 @@ export async function requestNotificationPermission(): Promise<void> {
 }
 
 export function notify(title: string, body: string, icon?: string | null): void {
-  if (!("Notification" in window)) return;
+  if (typeof Notification === "undefined" || !Notification) return;
   if (Notification.permission !== "granted") return;
   if (document.hasFocus()) return;
 
