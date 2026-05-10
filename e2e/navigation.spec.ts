@@ -84,10 +84,10 @@ test.describe("navigation", () => {
     const usernameInput = page.getByPlaceholder("Search by username…");
     await expect(usernameInput).toBeVisible({ timeout: 5_000 });
 
-    // "zzznotauser" is unlikely to match any real user — wait for stable "No users found" end-state.
-    // Avoid checking for "Searching…" since React 18 batching can collapse that transient state.
-    await usernameInput.fill("zzznotauser");
-    await expect(usernameInput).toHaveValue("zzznotauser");
+    // Use keyboard typing (not fill) so each keystroke fires React's onChange on the controlled input.
+    // "zzznotauser" is unlikely to match real users — wait for stable "No users found" end-state.
+    await usernameInput.click();
+    await page.keyboard.type("zzznotauser");
     await expect(page.getByText(/No users found/)).toBeVisible({ timeout: 15_000 });
   });
 

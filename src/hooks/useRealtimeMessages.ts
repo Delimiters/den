@@ -126,11 +126,11 @@ export function useRealtimeMessages(channelId: string | null) {
   }
 
   async function deleteMessage(messageId: string) {
+    removeMessage(messageId);
     await supabase
       .from("messages")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", messageId);
-    removeMessage(messageId);
   }
 
   return { sendMessage, editMessage, deleteMessage };
