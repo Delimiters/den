@@ -87,6 +87,7 @@ test.describe("server settings", () => {
 
   test("can create a role in server settings", async ({ page }) => {
     const { cleanup } = await createServer(page);
+    const roleName = `e2e-role-${Date.now()}`;
     try {
       await page.getByTitle("Server settings").click();
       await page.getByRole("button", { name: "Roles" }).click();
@@ -94,11 +95,10 @@ test.describe("server settings", () => {
       await page.getByRole("button", { name: "Create Role" }).click();
       await expect(page.getByPlaceholder("Role name")).toBeVisible({ timeout: 5_000 });
 
-      await page.getByPlaceholder("Role name").fill("Testers");
+      await page.getByPlaceholder("Role name").fill(roleName);
       await page.getByRole("button", { name: /save/i }).click();
 
-      // Check the role appears in the role list (getByText would match the input too — use button role)
-      await expect(page.getByRole("button", { name: "Testers" })).toBeVisible({ timeout: 8_000 });
+      await expect(page.getByRole("button", { name: roleName })).toBeVisible({ timeout: 8_000 });
     } finally {
       await cleanup();
     }

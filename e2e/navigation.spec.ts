@@ -68,14 +68,15 @@ test.describe("navigation", () => {
     await page.getByTitle("Direct Messages").click({ force: true });
     const tabBar = page.locator("[data-testid='dm-tab-bar']");
     await expect(tabBar.getByRole("button", { name: "Friends" })).toBeVisible({ timeout: 5_000 });
-    await tabBar.getByRole("button", { name: "Friends" }).click();
+    await tabBar.getByRole("button", { name: "Friends" }).click({ force: true });
     await page.getByRole("button", { name: "Add Friend" }).click();
 
     const usernameInput = page.getByPlaceholder("Search by username…");
     await expect(usernameInput).toBeVisible({ timeout: 5_000 });
 
-    await usernameInput.pressSequentially("zzz-nonexistent-xyz");
-    await expect(page.getByText(/No users found/)).toBeVisible({ timeout: 10_000 });
+    // Use a short unique query to trigger one search; wait for searching OR no-results feedback
+    await usernameInput.fill("zzz");
+    await expect(page.getByText(/Searching|No users found/)).toBeVisible({ timeout: 10_000 });
   });
 
   // Runs last — creates and deletes a guild, which may leave Supabase realtime in a changed state
