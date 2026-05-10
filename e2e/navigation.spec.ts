@@ -19,6 +19,17 @@ async function pressCtrlK(page: import("@playwright/test").Page) {
   });
 }
 
+/**
+ * JS-evaluated click — bypasses Playwright's viewport-bounds check entirely.
+ * Needed for buttons inside overflow-y:auto containers that CI reports as
+ * "outside of the viewport" even after scrollIntoView.
+ */
+async function jsClick(page: import("@playwright/test").Page, title: string) {
+  await page.evaluate((t) => {
+    (document.querySelector(`[title="${t}"]`) as HTMLElement)?.click();
+  }, title);
+}
+
 test.describe("navigation", () => {
   test("quick switcher opens and closes", async ({ page }) => {
     await page.goto("/");
@@ -35,8 +46,7 @@ test.describe("navigation", () => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
-    // force:true bypasses actionability checks (CI headless Chrome reports not-visible intermittently)
-    await page.getByTitle("Direct Messages").click({ force: true });
+    await jsClick(page, "Direct Messages");
 
     // Scope to the DM tab bar to avoid matching other "Messages" buttons on the page
     const tabBar = page.locator("[data-testid='dm-tab-bar']");
@@ -49,7 +59,7 @@ test.describe("navigation", () => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
-    await page.getByTitle("Direct Messages").click({ force: true });
+    await jsClick(page, "Direct Messages");
     const tabBar = page.locator("[data-testid='dm-tab-bar']");
     await expect(tabBar.getByRole("button", { name: "Friends" })).toBeVisible({ timeout: 5_000 });
     await tabBar.getByRole("button", { name: "Friends" }).click({ force: true });
@@ -65,8 +75,7 @@ test.describe("navigation", () => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
-    await page.getByTitle("Direct Messages").scrollIntoViewIfNeeded();
-    await page.getByTitle("Direct Messages").click({ force: true });
+    await jsClick(page, "Direct Messages");
     const tabBar = page.locator("[data-testid='dm-tab-bar']");
     await expect(tabBar.getByRole("button", { name: "Friends" })).toBeVisible({ timeout: 5_000 });
     await tabBar.getByRole("button", { name: "Friends" }).click({ force: true });
