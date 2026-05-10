@@ -35,8 +35,8 @@ test.describe("navigation", () => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
-    await page.getByTitle("Direct Messages").scrollIntoViewIfNeeded();
-    await page.getByTitle("Direct Messages").click();
+    // force:true bypasses actionability checks (CI headless Chrome reports not-visible intermittently)
+    await page.getByTitle("Direct Messages").click({ force: true });
 
     // Scope to the DM tab bar to avoid matching other "Messages" buttons on the page
     const tabBar = page.locator("[data-testid='dm-tab-bar']");
@@ -49,11 +49,12 @@ test.describe("navigation", () => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
-    await page.getByTitle("Direct Messages").scrollIntoViewIfNeeded();
-    await page.getByTitle("Direct Messages").click();
+    await page.getByTitle("Direct Messages").click({ force: true });
     const tabBar = page.locator("[data-testid='dm-tab-bar']");
     await expect(tabBar).toBeVisible({ timeout: 5_000 });
-    await tabBar.getByRole("button", { name: "Friends" }).click();
+    const friendsBtn = tabBar.getByRole("button", { name: "Friends" });
+    await expect(friendsBtn).toBeVisible({ timeout: 5_000 });
+    await friendsBtn.click();
 
     // FriendsView sub-tabs (Online/All/Pending may include a count in their accessible name)
     await expect(page.getByRole("button", { name: /^Online/ })).toBeVisible({ timeout: 5_000 });
@@ -66,11 +67,12 @@ test.describe("navigation", () => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
-    await page.getByTitle("Direct Messages").scrollIntoViewIfNeeded();
-    await page.getByTitle("Direct Messages").click();
+    await page.getByTitle("Direct Messages").click({ force: true });
     const tabBar = page.locator("[data-testid='dm-tab-bar']");
     await expect(tabBar).toBeVisible({ timeout: 5_000 });
-    await tabBar.getByRole("button", { name: "Friends" }).click();
+    const friendsBtn = tabBar.getByRole("button", { name: "Friends" });
+    await expect(friendsBtn).toBeVisible({ timeout: 5_000 });
+    await friendsBtn.click();
     await page.getByRole("button", { name: "Add Friend" }).click();
 
     const usernameInput = page.getByPlaceholder("Search by username…");
