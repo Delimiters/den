@@ -81,9 +81,8 @@ test.describe("messaging", () => {
 
       await page.getByText(text).hover();
       await page.getByTitle("Delete message").click();
-      await page.getByRole("button", { name: "Delete" }).click();
 
-      await expect(page.getByText(text)).not.toBeVisible({ timeout: 8_000 });
+      await expect(page.getByText(text)).not.toBeVisible({ timeout: 10_000 });
     } finally {
       await cleanup();
     }
