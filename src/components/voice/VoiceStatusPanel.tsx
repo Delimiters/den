@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocalParticipant, useParticipants, useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { prefs } from "../../utils/prefs";
+import { isTauri } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 interface VoiceStatusPanelProps {
   channelName: string;
@@ -74,7 +76,16 @@ export function VoiceStatusPanel({ channelName, onLeave, onWatchScreenShare }: V
   }
 
   async function toggleScreenShare() {
+    // On Windows/WebView2, the screen picker can appear behind the app window and freeze it.
+    // Minimize before showing the picker so it can come to the foreground, then restore.
+    const isWindows = navigator.userAgent.includes("Windows");
+    const shouldMinimize = !isScreenSharing && isTauri() && isWindows;
+    const win = shouldMinimize ? getCurrentWindow() : null;
     try {
+      if (win) {
+        await win.minimize();
+        await new Promise((r) => setTimeout(r, 150));
+      }
       await localParticipant.setScreenShareEnabled(!isScreenSharing);
     } catch (err) {
       const msg = (err as Error)?.message ?? String(err);
@@ -85,6 +96,11 @@ export function VoiceStatusPanel({ channelName, onLeave, onWatchScreenShare }: V
       } else if (!msg.includes("cancelled") && !msg.includes("abort")) {
         setMediaError(`Screen share error: ${msg}`);
         console.error("[screenshare]", err);
+      }
+    } finally {
+      if (win) {
+        await win.unminimize();
+        await win.setFocus();
       }
     }
   }
