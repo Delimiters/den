@@ -52,7 +52,7 @@ test.describe("navigation", () => {
     await page.getByTitle("Direct Messages").click({ force: true });
     const tabBar = page.locator("[data-testid='dm-tab-bar']");
     await expect(tabBar.getByRole("button", { name: "Friends" })).toBeVisible({ timeout: 5_000 });
-    await tabBar.getByRole("button", { name: "Friends" }).click();
+    await tabBar.getByRole("button", { name: "Friends" }).click({ force: true });
 
     // FriendsView sub-tabs (Online/All/Pending may include a count in their accessible name)
     await expect(page.getByRole("button", { name: /^Online/ })).toBeVisible({ timeout: 5_000 });
@@ -65,6 +65,7 @@ test.describe("navigation", () => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
+    await page.getByTitle("Direct Messages").scrollIntoViewIfNeeded();
     await page.getByTitle("Direct Messages").click({ force: true });
     const tabBar = page.locator("[data-testid='dm-tab-bar']");
     await expect(tabBar.getByRole("button", { name: "Friends" })).toBeVisible({ timeout: 5_000 });
