@@ -29,6 +29,7 @@ export function UserSettingsModal({ currentUser, onClose }: UserSettingsModalPro
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
       <div
+        role="dialog"
         className="bg-overlay rounded-lg w-full max-w-2xl h-[520px] shadow-2xl flex overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >

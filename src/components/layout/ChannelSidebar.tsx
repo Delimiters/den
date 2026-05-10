@@ -432,7 +432,7 @@ function InviteModal({ guildId, currentUserId, onClose }: {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-overlay rounded-lg w-full max-w-sm shadow-2xl overflow-hidden">
+      <div role="dialog" className="bg-overlay rounded-lg w-full max-w-sm shadow-2xl overflow-hidden">
         <div className="px-6 pt-6 pb-4 border-b border-divider flex items-center justify-between">
           <h2 className="text-text-primary text-xl font-bold">Invite People</h2>
           <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl leading-none">✕</button>

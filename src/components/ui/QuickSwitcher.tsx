@@ -104,7 +104,7 @@ export function QuickSwitcher({ onClose }: QuickSwitcherProps) {
           <kbd className="text-text-muted text-xs border border-divider rounded px-1.5 py-0.5">Esc</kbd>
         </div>
 
-        <div ref={listRef} className="max-h-80 overflow-y-auto py-1">
+        <div ref={listRef} data-testid="quick-switcher-results" className="max-h-80 overflow-y-auto py-1">
           {filtered.length === 0 && (
             <p className="text-text-muted text-sm text-center py-6">No channels or conversations found</p>
           )}

@@ -183,6 +183,7 @@ export function Message({
           {Object.entries(reactionGroups).map(([emoji, { count, mine }]) => (
             <button
               key={emoji}
+              data-testid="reaction-badge"
               onClick={() => onReact?.(message.id, emoji)}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 min-h-[28px] rounded-full text-sm border transition-colors ${
                 mine

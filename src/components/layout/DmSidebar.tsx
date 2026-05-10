@@ -56,7 +56,7 @@ export function DmSidebar({
   return (
     <div className="w-60 bg-sidebar flex flex-col shrink-0">
       {/* Tab switcher */}
-      <div className="h-12 px-3 flex items-center gap-1 border-b border-divider shadow-sm shrink-0">
+      <div data-testid="dm-tab-bar" className="h-12 px-3 flex items-center gap-1 border-b border-divider shadow-sm shrink-0">
         <TabBtn label="Messages" active={activeTab === "messages"} onClick={() => onTabChange("messages")} />
         <TabBtn label="Friends" active={activeTab === "friends"} onClick={() => onTabChange("friends")} />
         {activeTab === "messages" && (
