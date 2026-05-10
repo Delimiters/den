@@ -142,6 +142,32 @@ pub fn run() {
                 });
             }
 
+            // Register ScreenCaptureStarting handler so getDisplayMedia() doesn't deadlock
+            // on newer WebView2 (1.0.2739+). Without a registered handler the call can
+            // block indefinitely. We leave Handled = false so WebView2 still shows the
+            // system screen picker; registering the handler alone is enough to unblock it.
+            #[cfg(target_os = "windows")]
+            {
+                use webview2_com::{
+                    Microsoft::Web::WebView2::Win32::ICoreWebView2_27,
+                    ScreenCaptureStartingEventHandler,
+                };
+                use windows::core::Interface;
+                let _ = window.with_webview(|wv| unsafe {
+                    let controller = wv.controller();
+                    if let Ok(webview) = controller.CoreWebView2() {
+                        if let Ok(webview27) = webview.cast::<ICoreWebView2_27>() {
+                            let handler = ScreenCaptureStartingEventHandler::create(Box::new(|_, _args| {
+                                // Handled stays false (default) — WebView2 shows the system picker.
+                                Ok(())
+                            }));
+                            let mut token: i64 = 0;
+                            let _ = webview27.add_ScreenCaptureStarting(&handler, &mut token);
+                        }
+                    }
+                });
+            }
+
             // Set AppUserModelID so Den groups correctly in Task Manager / taskbar.
             #[cfg(target_os = "windows")]
             unsafe {
