@@ -190,7 +190,7 @@ export function ServerSettingsModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-overlay rounded-lg w-full max-w-2xl h-[560px] shadow-2xl flex overflow-hidden">
+      <div role="dialog" className="bg-overlay rounded-lg w-full max-w-2xl h-[560px] shadow-2xl flex overflow-hidden">
         {/* Left nav */}
         <div className="w-48 bg-guild-rail flex flex-col py-4 shrink-0">
           <p className="text-text-muted text-xs font-semibold uppercase tracking-wide px-4 mb-2 truncate">
@@ -251,10 +251,11 @@ export function ServerSettingsModal({
 
             {/* Guild name */}
             <div className="flex flex-col gap-1">
-              <label className="text-text-secondary text-xs font-semibold uppercase tracking-wide">
+              <label htmlFor="server-name" className="text-text-secondary text-xs font-semibold uppercase tracking-wide">
                 Server Name
               </label>
               <input
+                id="server-name"
                 value={guildName}
                 onChange={(e) => setGuildName(e.target.value)}
                 disabled={!isOwner}
@@ -296,7 +297,7 @@ export function ServerSettingsModal({
                   disabled={creating}
                   className="text-accent hover:text-accent text-xs font-semibold disabled:opacity-50"
                 >
-                  + Add
+                  Create Role
                 </button>
               )}
             </div>
@@ -343,10 +344,12 @@ export function ServerSettingsModal({
                   <>
                     {/* Name */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-text-secondary text-xs font-semibold uppercase tracking-wide">
+                      <label htmlFor="role-name" className="text-text-secondary text-xs font-semibold uppercase tracking-wide">
                         Role Name
                       </label>
                       <input
+                        id="role-name"
+                        placeholder="Role name"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         disabled={selectedRole.name === "@everyone"}

@@ -57,9 +57,11 @@ test.describe("navigation", () => {
       const switcher = page.getByPlaceholder("Jump to channel or conversation…");
       await expect(switcher).toBeVisible({ timeout: 5_000 });
       await switcher.fill(channelName);
-      await expect(page.getByText(channelName)).toBeVisible({ timeout: 5_000 });
 
-      await page.getByText(channelName).click();
+      // Scope to the QuickSwitcher result list to avoid matching the channel sidebar
+      const results = page.getByTestId("quick-switcher-results");
+      await expect(results.getByRole("button").first()).toBeVisible({ timeout: 5_000 });
+      await results.getByRole("button").first().click();
       await expect(page.getByPlaceholder(`Message #${channelName}`)).toBeVisible({ timeout: 8_000 });
     } finally {
       if (guildId) {
@@ -91,10 +93,10 @@ test.describe("navigation", () => {
     await expect(tabBar).toBeVisible({ timeout: 5_000 });
     await tabBar.getByRole("button", { name: "Friends" }).click();
 
-    // FriendsView sub-tabs are plain buttons
-    await expect(page.getByRole("button", { name: "Online" })).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByRole("button", { name: "All" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Pending" })).toBeVisible();
+    // FriendsView sub-tabs (Online/All/Pending may include a count in their accessible name)
+    await expect(page.getByRole("button", { name: /^Online/ })).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole("button", { name: /^All/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Pending/ })).toBeVisible();
     await expect(page.getByRole("button", { name: "Add Friend" })).toBeVisible();
   });
 

@@ -73,7 +73,7 @@ test.describe("server settings", () => {
     const { cleanup } = await createServer(page);
     try {
       // Click the invite icon on the channel sidebar header (or context menu)
-      await page.getByTitle("Create invite").click();
+      await page.getByTitle("Invite people").click();
 
       const inviteInput = page.getByRole("textbox").filter({ hasText: /[A-Za-z0-9]{6,}/ });
       // Just check an invite code appears (a non-empty value in the invite modal)
@@ -91,10 +91,10 @@ test.describe("server settings", () => {
       await page.getByTitle("Server settings").click();
       await page.getByRole("button", { name: "Roles" }).click();
 
-      await page.getByRole("button", { name: /create role/i }).click();
-      await expect(page.getByPlaceholder(/role name/i)).toBeVisible({ timeout: 5_000 });
+      await page.getByRole("button", { name: "Create Role" }).click();
+      await expect(page.getByPlaceholder("Role name")).toBeVisible({ timeout: 5_000 });
 
-      await page.getByPlaceholder(/role name/i).fill("Testers");
+      await page.getByPlaceholder("Role name").fill("Testers");
       await page.getByRole("button", { name: /save/i }).click();
 
       await expect(page.getByText("Testers")).toBeVisible({ timeout: 8_000 });
