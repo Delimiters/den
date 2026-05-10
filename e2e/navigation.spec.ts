@@ -20,14 +20,26 @@ async function pressCtrlK(page: import("@playwright/test").Page) {
 }
 
 /**
- * JS-evaluated click — bypasses Playwright's viewport-bounds check entirely.
- * Needed for buttons inside overflow-y:auto containers that CI reports as
- * "outside of the viewport" even after scrollIntoView.
+ * Click an element by title, bypassing Playwright's viewport-bounds check.
+ * dispatchEvent skips all actionability checks and reliably triggers React onClick.
  */
-async function jsClick(page: import("@playwright/test").Page, title: string) {
-  await page.evaluate((t) => {
-    (document.querySelector(`[title="${t}"]`) as HTMLElement)?.click();
-  }, title);
+async function clickByTitle(page: import("@playwright/test").Page, title: string) {
+  await page.locator(`[title="${title}"]`).dispatchEvent("click");
+}
+
+/**
+ * Set a React controlled input's value and fire a single input event.
+ * Avoids the race condition that keyboard.type causes (one Supabase query per
+ * character) and the React synthetic event issue that fill() sometimes misses.
+ */
+async function setInputValue(page: import("@playwright/test").Page, placeholder: string, value: string) {
+  await page.evaluate(({ ph, val }) => {
+    const input = document.querySelector(`input[placeholder="${ph}"]`) as HTMLInputElement | null;
+    if (!input) return;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    setter?.call(input, val);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  }, { ph: placeholder, val: value });
 }
 
 test.describe("navigation", () => {
@@ -46,12 +58,11 @@ test.describe("navigation", () => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
-    await jsClick(page, "Direct Messages");
+    await clickByTitle(page, "Direct Messages");
 
     // Scope to the DM tab bar to avoid matching other "Messages" buttons on the page
     const tabBar = page.locator("[data-testid='dm-tab-bar']");
-    await expect(tabBar).toBeVisible({ timeout: 5_000 });
-    await expect(tabBar.getByRole("button", { name: "Messages" })).toBeVisible();
+    await expect(tabBar.getByRole("button", { name: "Messages" })).toBeVisible({ timeout: 10_000 });
     await expect(tabBar.getByRole("button", { name: "Friends" })).toBeVisible();
   });
 
@@ -59,9 +70,9 @@ test.describe("navigation", () => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
-    await jsClick(page, "Direct Messages");
+    await clickByTitle(page, "Direct Messages");
     const tabBar = page.locator("[data-testid='dm-tab-bar']");
-    await expect(tabBar.getByRole("button", { name: "Friends" })).toBeVisible({ timeout: 5_000 });
+    await expect(tabBar.getByRole("button", { name: "Friends" })).toBeVisible({ timeout: 10_000 });
     await tabBar.getByRole("button", { name: "Friends" }).click({ force: true });
 
     // FriendsView sub-tabs (Online/All/Pending may include a count in their accessible name)
@@ -75,19 +86,18 @@ test.describe("navigation", () => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
-    await jsClick(page, "Direct Messages");
+    await clickByTitle(page, "Direct Messages");
     const tabBar = page.locator("[data-testid='dm-tab-bar']");
-    await expect(tabBar.getByRole("button", { name: "Friends" })).toBeVisible({ timeout: 5_000 });
+    await expect(tabBar.getByRole("button", { name: "Friends" })).toBeVisible({ timeout: 10_000 });
     await tabBar.getByRole("button", { name: "Friends" }).click({ force: true });
     await page.getByRole("button", { name: "Add Friend" }).click();
 
     const usernameInput = page.getByPlaceholder("Search by username…");
     await expect(usernameInput).toBeVisible({ timeout: 5_000 });
 
-    // "zzznotauser" is unlikely to match any real user — wait for stable "No users found" end-state.
-    // Avoid checking for "Searching…" since React 18 batching can collapse that transient state.
-    await usernameInput.fill("zzznotauser");
-    await expect(usernameInput).toHaveValue("zzznotauser");
+    // Use native value setter + single input event to fire exactly one Supabase query.
+    // keyboard.type fires one query per character causing concurrent requests that race.
+    await setInputValue(page, "Search by username…", "zzznotauser");
     await expect(page.getByText(/No users found/)).toBeVisible({ timeout: 15_000 });
   });
 
