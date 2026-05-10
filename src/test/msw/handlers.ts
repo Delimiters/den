@@ -3,10 +3,6 @@ import { http, HttpResponse } from "msw";
 const BASE = "http://localhost:54321/rest/v1";
 
 export const defaultHandlers = [
-  // voice_sessions
-  http.post(`${BASE}/voice_sessions`, () => HttpResponse.json({})),
-  http.delete(`${BASE}/voice_sessions`, () => HttpResponse.json({})),
-
   // user_presence
   http.post(`${BASE}/user_presence`, () => HttpResponse.json({})),
 
