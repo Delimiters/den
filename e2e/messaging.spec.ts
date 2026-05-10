@@ -12,10 +12,6 @@ async function supabaseClient() {
   return sb;
 }
 
-/**
- * Shared setup: creates a server + text channel, navigates into it.
- * Returns cleanup fn and channel name.
- */
 async function setupServerAndChannel(page: import("@playwright/test").Page) {
   await page.goto("/");
   await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
@@ -37,14 +33,15 @@ async function setupServerAndChannel(page: import("@playwright/test").Page) {
   const { data: guild } = await sb.from("guilds").select("id").eq("name", guildName).single();
   const guildId = guild?.id ?? null;
 
-  const cleanup = async () => {
-    if (guildId) {
-      const sb2 = await supabaseClient();
-      await sb2.from("guilds").delete().eq("id", guildId);
-    }
+  return {
+    channelName,
+    cleanup: async () => {
+      if (guildId) {
+        const sb2 = await supabaseClient();
+        await sb2.from("guilds").delete().eq("id", guildId);
+      }
+    },
   };
-
-  return { channelName, cleanup };
 }
 
 test.describe("messaging", () => {
@@ -59,7 +56,6 @@ test.describe("messaging", () => {
       await page.keyboard.press("Enter");
       await expect(page.getByText(original)).toBeVisible({ timeout: 10_000 });
 
-      // Up-arrow on empty input to edit last message
       await input.focus();
       await page.keyboard.press("ArrowUp");
       await expect(page.getByText("Editing message")).toBeVisible({ timeout: 5_000 });
@@ -83,11 +79,8 @@ test.describe("messaging", () => {
       await page.keyboard.press("Enter");
       await expect(page.getByText(text)).toBeVisible({ timeout: 10_000 });
 
-      // Hover message to reveal action bar, click delete
       await page.getByText(text).hover();
       await page.getByTitle("Delete message").click();
-
-      // Confirm deletion dialog
       await page.getByRole("button", { name: "Delete" }).click();
 
       await expect(page.getByText(text)).not.toBeVisible({ timeout: 8_000 });
@@ -108,15 +101,12 @@ test.describe("messaging", () => {
 
       await page.getByText(original).hover();
       await page.getByTitle("Reply").click();
-
-      // Reply indicator should appear
       await expect(page.getByText(/Replying to/)).toBeVisible({ timeout: 5_000 });
 
       await page.getByPlaceholder(`Message #${channelName}`).fill(reply);
       await page.keyboard.press("Enter");
 
       await expect(page.getByText(reply)).toBeVisible({ timeout: 10_000 });
-      // The replied-to message should be quoted above the reply
       await expect(page.getByText(original)).toBeVisible();
     } finally {
       await cleanup();
@@ -134,15 +124,18 @@ test.describe("messaging", () => {
       await page.getByText(text).hover();
       await page.getByTitle("Add reaction").click();
 
-      // Emoji picker should open
-      await expect(page.getByPlaceholder("Search emoji")).toBeVisible({ timeout: 5_000 });
+      // Emoji picker opens
+      await expect(page.getByPlaceholder("Search emoji…")).toBeVisible({ timeout: 5_000 });
 
-      // Search for thumbsup and click it
-      await page.getByPlaceholder("Search emoji").fill("thumbs");
-      await page.locator("[data-emoji]").first().click();
+      // Search and pick the first result
+      await page.getByPlaceholder("Search emoji…").fill("smile");
+      // When search is active, category tabs hide — only the emoji grid buttons remain
+      const firstEmoji = page.locator("div.grid.grid-cols-8 button").first();
+      await firstEmoji.waitFor({ timeout: 5_000 });
+      await firstEmoji.click();
 
-      // Reaction badge should appear on the message
-      await expect(page.locator("[data-testid='reaction']").first()).toBeVisible({ timeout: 8_000 });
+      // Reaction badge appears on the message
+      await expect(page.locator("[data-testid='reaction-badge']").first()).toBeVisible({ timeout: 8_000 });
     } finally {
       await cleanup();
     }
@@ -156,20 +149,21 @@ test.describe("messaging", () => {
       await page.keyboard.press("Enter");
       await expect(page.getByText(unique)).toBeVisible({ timeout: 10_000 });
 
-      // Open search
-      await page.getByTitle("Search messages").click();
+      await page.getByTitle("Search messages (Ctrl+F)").click();
       await expect(page.getByPlaceholder("Search messages…")).toBeVisible({ timeout: 5_000 });
 
       await page.getByPlaceholder("Search messages…").fill(unique);
-      await page.keyboard.press("Enter");
 
-      await expect(page.getByText(unique)).toBeVisible({ timeout: 8_000 });
+      // Wait for results — "No results" should not appear
+      await expect(page.getByText(/No results for/)).not.toBeVisible({ timeout: 8_000 });
+      // The result row appears in the search panel
+      await expect(page.locator("div.divide-y").getByText(unique)).toBeVisible({ timeout: 8_000 });
     } finally {
       await cleanup();
     }
   });
 
-  test("can pin and unpin a message", async ({ page }) => {
+  test("can pin a message", async ({ page }) => {
     const { channelName, cleanup } = await setupServerAndChannel(page);
     try {
       const text = `pin-me-${Date.now()}`;
@@ -178,10 +172,9 @@ test.describe("messaging", () => {
       await expect(page.getByText(text)).toBeVisible({ timeout: 10_000 });
 
       await page.getByText(text).hover();
-      await page.getByTitle("More actions").click();
-      await page.getByRole("menuitem", { name: /[Pp]in/ }).click();
+      await page.getByTitle("Pin message").click();
 
-      // Pinned messages button in toolbar should now show a pin count
+      // Pinned messages panel button becomes active
       await expect(page.getByTitle("Pinned messages")).toBeVisible({ timeout: 5_000 });
       await page.getByTitle("Pinned messages").click();
       await expect(page.getByText(text)).toBeVisible({ timeout: 5_000 });

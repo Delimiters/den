@@ -17,11 +17,13 @@ test.describe("navigation", () => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
+    // Focus the page before sending keyboard shortcut
+    await page.locator("body").click();
     await page.keyboard.press("Control+K");
-    await expect(page.getByPlaceholder(/jump to/i)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByPlaceholder("Jump to channel or conversation…")).toBeVisible({ timeout: 5_000 });
 
     await page.keyboard.press("Escape");
-    await expect(page.getByPlaceholder(/jump to/i)).not.toBeVisible();
+    await expect(page.getByPlaceholder("Jump to channel or conversation…")).not.toBeVisible();
   });
 
   test("quick switcher finds a channel", async ({ page }) => {
@@ -46,12 +48,14 @@ test.describe("navigation", () => {
       const { data: guild } = await sb.from("guilds").select("id").eq("name", guildName).single();
       guildId = guild?.id ?? null;
 
+      await page.locator("body").click();
       await page.keyboard.press("Control+K");
-      await page.getByPlaceholder(/jump to/i).fill(channelName);
+      const switcher = page.getByPlaceholder("Jump to channel or conversation…");
+      await expect(switcher).toBeVisible({ timeout: 5_000 });
+      await switcher.fill(channelName);
       await expect(page.getByText(channelName)).toBeVisible({ timeout: 5_000 });
 
       await page.getByText(channelName).click();
-      // Should land in the channel
       await expect(page.getByPlaceholder(`Message #${channelName}`)).toBeVisible({ timeout: 8_000 });
     } finally {
       if (guildId) {
@@ -65,11 +69,11 @@ test.describe("navigation", () => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
-    // Click the DMs icon in the guild rail
     await page.getByTitle("Direct Messages").click();
 
-    await expect(page.getByRole("tab", { name: "Messages" })).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByRole("tab", { name: "Friends" })).toBeVisible();
+    // Tabs are plain buttons, not role="tab"
+    await expect(page.getByRole("button", { name: "Messages" })).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole("button", { name: "Friends" })).toBeVisible();
   });
 
   test("Friends tab shows friends view with sub-tabs", async ({ page }) => {
@@ -77,31 +81,29 @@ test.describe("navigation", () => {
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
     await page.getByTitle("Direct Messages").click();
-    await page.getByRole("tab", { name: "Friends" }).click();
+    await page.getByRole("button", { name: "Friends" }).click();
 
-    await expect(page.getByRole("tab", { name: "Online" })).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByRole("tab", { name: "All" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "Pending" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "Add Friend" })).toBeVisible();
+    // FriendsView sub-tabs are also plain buttons
+    await expect(page.getByRole("button", { name: "Online" })).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole("button", { name: "All" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Pending" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Add Friend" })).toBeVisible();
   });
 
-  test("Add Friend tab accepts input and shows send button", async ({ page }) => {
+  test("Add Friend tab accepts username input and searches", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTitle("Create a server")).toBeVisible({ timeout: 15_000 });
 
     await page.getByTitle("Direct Messages").click();
-    await page.getByRole("tab", { name: "Friends" }).click();
-    await page.getByRole("tab", { name: "Add Friend" }).click();
+    await page.getByRole("button", { name: "Friends" }).click();
+    await page.getByRole("button", { name: "Add Friend" }).click();
 
-    const usernameInput = page.getByPlaceholder(/username/i);
+    const usernameInput = page.getByPlaceholder("Search by username…");
     await expect(usernameInput).toBeVisible({ timeout: 5_000 });
 
-    await usernameInput.fill("nonexistent-user-xyz");
-    await page.getByRole("button", { name: /send friend request/i }).click();
+    await usernameInput.fill("zzz-nonexistent-xyz");
 
-    // Should show an error (user not found) or "Request sent" — either way the button fired
-    await expect(
-      page.getByText(/not found|request sent|already/i)
-    ).toBeVisible({ timeout: 8_000 });
+    // Should show "No users found" for a bogus search
+    await expect(page.getByText(/No users found/)).toBeVisible({ timeout: 8_000 });
   });
 });
